@@ -14,10 +14,10 @@ namespace TaskSurvey.Infrastructure.Models
         [Key]
         public int Id { get; set; }
         [ForeignKey("UserId"), Required]
-        public int UserId { get; set; }
+        public required string UserId { get; set; }
         public virtual User? User { get; set; }
         [ForeignKey("SupervisorId"), Required]
-        public int SupervisorId { get; set; }
+        public required string SupervisorId { get; set; }
         public virtual User? Supervisor { get; set; }
         public DateTime CreatedAt { get; set; }
     }

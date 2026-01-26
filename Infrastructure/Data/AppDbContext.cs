@@ -155,12 +155,130 @@ namespace TaskSurvey.Infrastructure.Data
             modelBuilder.Entity<User>().HasData(
                 new User
                 {
-                    Id = 1,
+                    Id = "00000001",
                     Username = "Wahyu Johan",
                     PasswordHash = password,
                     PositionId = 3,
                     PositionName = "Departement Leader",
                     RoleId = 1,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                },
+                new User
+                {
+                    Id = "00000002",
+                    Username = "Andhika",
+                    PasswordHash = password,
+                    PositionId = 1,
+                    PositionName = "IT Staff",
+                    RoleId = 2,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                }
+            );
+
+            modelBuilder.Entity<UserRelation>().HasData(
+                new UserRelation
+                {
+                    Id = 1,
+                    UserId = "00000002",
+                    SupervisorId = "00000001",
+                    CreatedAt = DateTime.Now
+                }
+            );
+
+            modelBuilder.Entity<TemplateHeader>().HasData(
+                new TemplateHeader
+                {
+                    Id = "TEMPLATE/2601/001",
+                    TemplateName = "Survey Kepuasan Kerja",
+                    PositionId = 3,
+                    Theme = "Blue Corporate",
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                }
+            );
+
+            modelBuilder.Entity<TemplateItem>().HasData(
+                new TemplateItem
+                {
+                    Id = 1,
+                    TemplateHeaderId = "TEMPLATE/2601/001",
+                    Question = "Apa pendapat Anda tentang lingkungan kerja?",
+                    Type = QuestionType.TextArea,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                },
+                new TemplateItem
+                {
+                    Id = 2,
+                    TemplateHeaderId = "TEMPLATE/2601/001",
+                    Question = "Fasilitas yang Anda gunakan:",
+                    Type = QuestionType.CheckBox,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                }
+            );
+
+            modelBuilder.Entity<TemplateItemDetail>().HasData(
+                new TemplateItemDetail
+                {
+                    Id = 1,
+                    TemplateItemId = 2,
+                    Item = "Laptop Inventaris",
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                },
+                new TemplateItemDetail
+                {
+                    Id = 2,
+                    TemplateItemId = 2,
+                    Item = "Ruang Meeting",
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                }
+            );
+
+            modelBuilder.Entity<DocumentSurvey>().HasData(
+                new DocumentSurvey
+                {
+                    DocumentId = "SURVEY/2601/0001",
+                    RequesterId = "00000002",
+                    Status = StatusType.Draft,
+                    TemplateHeaderId = "TEMPLATE/2601/001",
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                }
+            );
+
+            modelBuilder.Entity<DocumentSurveyItem>().HasData(
+                new DocumentSurveyItem
+                {
+                    Id = 1,
+                    DocumentSurveyId = "SURVEY/2601/0001",
+                    TemplateItemId = 1,
+                    Answer = "Lingkungan kerja sangat kondusif dan mendukung produktivitas.",
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                },
+                new DocumentSurveyItem
+                {
+                    Id = 2,
+                    DocumentSurveyId = "SURVEY/2601/0001",
+                    TemplateItemId = 2,
+                    Answer = "Selected",
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                }
+            );
+
+            modelBuilder.Entity<DocumentItemDetail>().HasData(
+                new DocumentItemDetail
+                {
+                    Id = 1,
+                    DocumentItemId = 2,
+                    TemplateItemDetailId = 1,
+                    IsChecked = true,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
                 }

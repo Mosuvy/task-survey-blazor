@@ -9,8 +9,8 @@ namespace TaskSurvey.Infrastructure.Models
 {
     public class User
     {
-        [Key]
-        public int Id { get; set; }
+        [Key, Required]
+        public string Id { get; set; } = null!;
         public required string Username { get; set; }
         public required string PasswordHash { get; set; }
         [ForeignKey("PositionId")]

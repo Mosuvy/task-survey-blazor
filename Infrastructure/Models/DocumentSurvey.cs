@@ -12,7 +12,7 @@ namespace TaskSurvey.Infrastructure.Models
         [Key]
         public required string DocumentId { get; set; }
         [ForeignKey("RequesterId"), Required]
-        public int RequesterId { get; set; }
+        public required string RequesterId { get; set; }
         public virtual User? Requester { get; set; }
         public StatusType Status { get; set; }
         [ForeignKey("TemplateHeaderId")]
