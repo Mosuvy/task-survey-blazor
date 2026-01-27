@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TaskSurvey.Infrastructure.DTOs.PositionDTOs;
+using TaskSurvey.Infrastructure.DTOs.RoleDTOs;
 using TaskSurvey.Infrastructure.DTOs.UserDTOs;
 using TaskSurvey.Infrastructure.Models;
 
@@ -12,15 +13,42 @@ namespace TaskSurvey.Infrastructure.Mappers
     {
         public static UserResponseDTO ToUserResponseDto(User user)
         {
+
+            var posDto = user.Position != null ? new PositionResponseDTO
+            {
+                Id = user.Position.Id,
+                PositionLevel = user.Position.PositionLevel,
+                CreatedAt = user.Position.CreatedAt
+            } : null;
+
+            var roleDto = user.Role != null ? new RoleResponseDTO
+            {
+                Id = user.Role.Id,
+                RoleName = user.Role.RoleName,
+                CreatedAt = user.Role.CreatedAt
+            } : null;
+
+            UserResponseDTO? supervisorDto = null;
+            var relation = user.SupervisorRelations?.FirstOrDefault();
+            if (relation?.Supervisor != null)
+            {
+                var s = relation.Supervisor;
+                supervisorDto = new UserResponseDTO
+                {
+                    Id = s.Id,
+                    Username = s.Username,
+                    PositionName = s.PositionName,
+                };
+            }
+
             return new UserResponseDTO
             {
                 Id = user.Id,
                 Username = user.Username,
-                PositionId = user.PositionId,
-                PositionLevel = user.Position!.PositionLevel,
+                Position = posDto,
                 PositionName = user.PositionName,
-                RoleId = user.RoleId,
-                RoleName = user.Role!.RoleName,
+                Role = roleDto,
+                Supervisor = supervisorDto,
                 CreatedAt = user.CreatedAt,
                 UpdatedAt = user.UpdatedAt
             };
@@ -37,16 +65,6 @@ namespace TaskSurvey.Infrastructure.Mappers
                 RoleId = req.RoleId,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now
-            };
-        }
-
-        public static UserRelation ToUserRelationEntity(string newUserId, string supervisorId)
-        {
-            return new UserRelation
-            {
-                UserId = newUserId,
-                SupervisorId = supervisorId,
-                CreatedAt = DateTime.Now
             };
         }
     }

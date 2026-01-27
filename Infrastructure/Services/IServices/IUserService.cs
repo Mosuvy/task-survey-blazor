@@ -13,7 +13,7 @@ namespace TaskSurvey.Infrastructure.Services.IServices
         Task<List<UserResponseDTO>?> GetUserByRoleId(int id);
         Task<List<UserResponseDTO>?> GetUserByPositionId(int id);
         Task<UserResponseDTO> CreateUser(UserRequestDTO userDto);
-        Task<UserResponseDTO?> UpdateUser(string id, UserRequestDTO userDto);
+        Task<UserResponseDTO?> UpdateUser(string id, UserRequestDTO userDto, string? supervisor);
         Task<bool> DeleteUser(string id);
     }
 }

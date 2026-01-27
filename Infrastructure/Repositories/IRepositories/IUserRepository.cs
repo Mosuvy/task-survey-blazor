@@ -13,7 +13,7 @@ namespace TaskSurvey.Infrastructure.Repositories.IRepositories
         Task<List<User>?> GetUserByRoleIdAsync(int id);
         Task<List<User>?> GetUserByPositionIdAsync(int id);
         Task<User> CreateUserAsync(User user, string supervisor);
-        Task<User?> UpdateUserAsync(string id, User user);
+        Task<User?> UpdateUserAsync(string id, User user, string? supervisor);
         Task<bool> DeleteUserAsync(string id);
     }
 }
