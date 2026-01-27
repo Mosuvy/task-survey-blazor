@@ -13,45 +13,52 @@ namespace TaskSurvey.Infrastructure.Mappers
     {
         public static UserResponseDTO ToUserResponseDto(User user)
         {
-
-            var posDto = user.Position != null ? new PositionResponseDTO
-            {
-                Id = user.Position.Id,
-                PositionLevel = user.Position.PositionLevel,
-                CreatedAt = user.Position.CreatedAt
-            } : null;
-
-            var roleDto = user.Role != null ? new RoleResponseDTO
-            {
-                Id = user.Role.Id,
-                RoleName = user.Role.RoleName,
-                CreatedAt = user.Role.CreatedAt
-            } : null;
-
-            UserResponseDTO? supervisorDto = null;
-            var relation = user.SupervisorRelations?.FirstOrDefault();
-            if (relation?.Supervisor != null)
-            {
-                var s = relation.Supervisor;
-                supervisorDto = new UserResponseDTO
+            PositionResponseDTO? posDto = null;
+                if (user.Position != null)
                 {
-                    Id = s.Id,
-                    Username = s.Username,
-                    PositionName = s.PositionName,
-                };
-            }
+                    posDto = new PositionResponseDTO
+                    {
+                        Id = user.Position.Id,
+                        PositionLevel = user.Position.PositionLevel,
+                        CreatedAt = user.Position.CreatedAt
+                    };
+                }
 
-            return new UserResponseDTO
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Position = posDto,
-                PositionName = user.PositionName,
-                Role = roleDto,
-                Supervisor = supervisorDto,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt
-            };
+                RoleResponseDTO? roleDto = null;
+                if (user.Role != null)
+                {
+                    roleDto = new RoleResponseDTO
+                    {
+                        Id = user.Role.Id,
+                        RoleName = user.Role.RoleName,
+                        CreatedAt = user.Role.CreatedAt
+                    };
+                }
+
+                UserResponseDTO? supervisorDto = null;
+                var relation = user.SupervisorRelations?.FirstOrDefault();
+                if (relation?.Supervisor != null)
+                {
+                    var s = relation.Supervisor;
+                    supervisorDto = new UserResponseDTO
+                    {
+                        Id = s.Id,
+                        Username = s.Username,
+                        PositionName = s.PositionName,
+                    };
+                }
+
+                return new UserResponseDTO
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    Position = posDto,
+                    PositionName = user.PositionName,
+                    Role = roleDto,
+                    Supervisor = supervisorDto,
+                    CreatedAt = user.CreatedAt,
+                    UpdatedAt = user.UpdatedAt
+                };
         }
 
         public static User ToUserEntity(UserRequestDTO req)

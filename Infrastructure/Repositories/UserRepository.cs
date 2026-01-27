@@ -66,7 +66,7 @@ namespace TaskSurvey.Infrastructure.Repositories
             };
             _context.UserRelations.Add(relation);
             await _context.SaveChangesAsync();
-            return user;
+            return (await GetUserByIdAsync(user.Id))!;
         }
 
         public async Task<User?> UpdateUserAsync(string id, User user, string? supervisor)
@@ -89,7 +89,7 @@ namespace TaskSurvey.Infrastructure.Repositories
             }
 
             await _context.SaveChangesAsync();
-            return existingUser;
+            return await GetUserByIdAsync(existingUser.Id);
         }
 
         public async Task<bool> DeleteUserAsync(string id)
