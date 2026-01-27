@@ -12,8 +12,9 @@ namespace TaskSurvey.Infrastructure.Models
         [Key]
         public int Id { get; set; }
         [ForeignKey("TemplateHeaderId")]
-        public required string TemplateHeaderId { get; set; }
+        public string TemplateHeaderId { get; set; } = null!;
         public virtual TemplateHeader? TemplateHeader { get; set; }
+        public int OrderNo { get; set; }
         public required string Question { get; set; }
         public required QuestionType Type { get; set; }
         public DateTime CreatedAt { get; set; }

@@ -18,6 +18,7 @@ namespace TaskSurvey.Infrastructure.Models
         public int TemplateItemId { get; set; }
         public virtual TemplateItem? TemplateItem { get; set; }
         public required string Answer { get; set; }
+        public int OrderNo { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         

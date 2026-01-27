@@ -206,6 +206,7 @@ namespace TaskSurvey.Infrastructure.Data
                     TemplateHeaderId = "TEMPLATE/2601/001",
                     Question = "Apa pendapat Anda tentang lingkungan kerja?",
                     Type = QuestionType.TextArea,
+                    OrderNo = 1,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
                 },
@@ -215,6 +216,7 @@ namespace TaskSurvey.Infrastructure.Data
                     TemplateHeaderId = "TEMPLATE/2601/001",
                     Question = "Fasilitas yang Anda gunakan:",
                     Type = QuestionType.CheckBox,
+                    OrderNo = 2,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
                 }
