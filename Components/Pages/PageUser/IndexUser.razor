@@ -1,0 +1,144 @@
+@page "/users"
+@layout MainLayout
+@rendermode InteractiveServer
+@inject IUserService UserService
+@inject IPositionService PositionService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold text-primary">User Management</h2>
+        <button class="btn btn-primary shadow-sm" @onclick='() => NavigationManager.NavigateTo("/users/form")'>
+            <i class="bi bi-plus-lg"></i> Add New User
+        </button>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="small fw-bold text-muted">Search User</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" placeholder="Search name or ID..." 
+                               @bind="searchQuery" @bind:event="oninput" @onkeyup="ApplyFilters" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold text-muted">Filter by Role</label>
+                    <select class="form-select" @onchange="OnRoleFilterChanged">
+                        <option value="0">All Roles</option>
+                        <option value="1">Supervisor</option>
+                        <option value="2">User</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold text-muted">Filter by Position</label>
+                    <select class="form-select" @onchange="OnPositionFilterChanged">
+                        <option value="0">All Positions</option>
+                        @foreach (var p in positions)
+                        {
+                            <option value="@p.Id">@p.PositionLevel</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Position Level</th>
+                            <th>Position Name</th>
+                            <th>Role</th>
+                            <th>Supervisor</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in filteredUsers)
+                        {
+                            <tr>
+                                <td class="fw-bold">@user.Id</td>
+                                <td>@user.Username</td>
+                                <td><span class="badge bg-info text-dark">@user.Position?.PositionLevel</span></td>
+                                <td>@user.PositionName</td>
+                                <td><span class="badge bg-secondary">@user.Role?.RoleName</span></td>
+                                <td>
+                                    @if (user.Supervisor != null)
+                                    {
+                                        <span class="text-primary font-monospace small">@@@user.Supervisor.Username</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">-</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-outline-primary btn-sm" @onclick="() => EditUser(user.Id)">
+                                        <i class="bi bi-pencil-square"></i> Edit
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<UserResponseDTO> users = new();
+    private List<UserResponseDTO> filteredUsers = new();
+    private List<PositionResponseDTO> positions = new();
+    
+    private string searchQuery = "";
+    private int selectedRoleId = 0;
+    private int selectedPosId = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        positions = await PositionService.GetPositions();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        users = await UserService.GetUsers();
+        ApplyFilters();
+    }
+
+    private void OnRoleFilterChanged(ChangeEventArgs e)
+    {
+        selectedRoleId = int.Parse(e.Value?.ToString() ?? "0");
+        ApplyFilters();
+    }
+
+    private void OnPositionFilterChanged(ChangeEventArgs e)
+    {
+        selectedPosId = int.Parse(e.Value?.ToString() ?? "0");
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var result = users.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            var q = searchQuery.ToLower();
+            result = result.Where(u => u.Username.ToLower().Contains(q) || u.Id.Contains(q));
+        }
+
+        if (selectedRoleId != 0) result = result.Where(u => u.RoleId == selectedRoleId);
+        if (selectedPosId != 0) result = result.Where(u => u.PositionId == selectedPosId);
+
+        filteredUsers = result.ToList();
+    }
+
+    private void EditUser(string id) => NavigationManager.NavigateTo($"/users/form?userId={id}");
+}

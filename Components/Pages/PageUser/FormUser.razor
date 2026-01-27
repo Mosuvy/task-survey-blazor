@@ -1,0 +1,245 @@
+@page "/users/form"
+@layout MainLayout
+@rendermode InteractiveServer
+@inject IUserService UserService
+@inject IPositionService PositionService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject TaskSurvey.Infrastructure.Data.AppDbContext DbContext
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white p-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">@(isEditMode ? $"Edit User: {currentUserId}" : "Create New User")</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">User ID</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control bg-light" value="@displayId" readonly />
+                                <button class="btn btn-outline-secondary" type="button" @onclick="() => showUserLookup = true">
+                                    <i class="bi bi-search"></i> Lookup
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Username</label>
+                            <input type="text" class="form-control" @bind="reqDto.Username" placeholder="Enter username" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Position Level</label>
+                            <select class="form-select" @bind="reqDto.PositionId">
+                                <option value="0">Select Position...</option>
+                                @foreach (var p in positions)
+                                {
+                                    <option value="@p.Id">@p.PositionLevel</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Position Name</label>
+                            <input type="text" class="form-control" @bind="reqDto.PositionName" />
+                        </div>
+
+                        <div class="col-12 mt-4">
+                            <div class="p-3 border rounded bg-light">
+                                <h6 class="border-bottom pb-2 mb-3 text-secondary">Supervisor Details (Officer)</h6>
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <label class="small fw-bold">Officer ID</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" @bind="reqDto.SupervisorId" readonly />
+                                            <button class="btn btn-dark" type="button" @onclick="() => showSupLookup = true">Lookup</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="small fw-bold">Name</label>
+                                        <input type="text" class="form-control" @bind="selectedSupName" readonly />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="small fw-bold">Position</label>
+                                        <input type="text" class="form-control" @bind="selectedSupPos" readonly />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white p-3 d-flex gap-2">
+                    <button class="btn btn-success px-4" @onclick="HandleSubmit">Submit</button>
+                    <button class="btn btn-primary" @onclick="ResetForm">New</button>
+                    @if (isEditMode)
+                    {
+                        <button class="btn btn-danger" @onclick="HandleDelete">Delete</button>
+                    }
+                    <button class="btn btn-outline-secondary ms-auto" @onclick='() => NavigationManager.NavigateTo("/users")'>Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (showSupLookup)
+{
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Select Supervisor (Role: Officer)</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => showSupLookup = false"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-3" placeholder="Search..." @bind="supSearchQuery" @bind:event="oninput" />
+                    <div class="table-responsive" style="max-height: 300px;">
+                        <table class="table table-hover text-center">
+                            <thead><tr><th>ID</th><th>Username</th><th>Action</th></tr></thead>
+                            <tbody>
+                                @foreach (var s in supLookupList.Where(x => x.Username.Contains(supSearchQuery, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    <tr>
+                                        <td>@s.Id</td><td>@s.Username</td>
+                                        <td><button class="btn btn-primary btn-sm" @onclick="() => SelectSup(s)">Select</button></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showUserLookup)
+{
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Select User to Edit</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => showUserLookup = false"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-3" placeholder="Search ID or Name..." @bind="userSearchQuery" @bind:event="oninput" />
+                    <div class="table-responsive" style="max-height: 300px;">
+                        <table class="table table-hover text-center">
+                            <thead><tr><th>ID</th><th>Username</th><th>Action</th></tr></thead>
+                            <tbody>
+                                @foreach (var u in allUsersList.Where(x => x.Username.Contains(userSearchQuery, StringComparison.OrdinalIgnoreCase) || x.Id.Contains(userSearchQuery)))
+                                {
+                                    <tr>
+                                        <td>@u.Id</td><td>@u.Username</td>
+                                        <td><button class="btn btn-primary btn-sm" @onclick="() => SelectUserToEdit(u.Id)">Edit This</button></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private UserRequestDTO reqDto = new();
+    private List<PositionResponseDTO> positions = new();
+    private List<UserResponseDTO> supLookupList = new();
+    private List<UserResponseDTO> allUsersList = new();
+    
+    private string displayId = "";
+    private string? currentUserId;
+    private bool isEditMode = false;
+    private bool showSupLookup = false;
+    private bool showUserLookup = false;
+    private string supSearchQuery = "";
+    private string userSearchQuery = "";
+    private string selectedSupName = "";
+    private string selectedSupPos = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        positions = await PositionService.GetPositions();
+        supLookupList = (await UserService.GetUserByRoleId(1))!;
+        allUsersList = await UserService.GetUsers();
+
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("userId", out var id))
+        {
+            await SelectUserToEdit(id!);
+        }
+        else
+        {
+            await GenerateNextId();
+        }
+    }
+
+    private async Task GenerateNextId() => displayId = await IdGeneratorUtil.GetNextFormattedUserId(DbContext);
+
+    private async Task SelectUserToEdit(string id)
+    {
+        showUserLookup = false;
+        currentUserId = id;
+        isEditMode = true;
+        displayId = id;
+        
+        var user = await UserService.GetUserById(id);
+        if (user != null)
+        {
+            reqDto.Username = user.Username;
+            reqDto.PositionId = user.PositionId; 
+            reqDto.PositionName = user.PositionName;
+            reqDto.SupervisorId = user.Supervisor?.Id;
+            selectedSupName = user.Supervisor?.Username ?? "";
+            selectedSupPos = user.Supervisor?.PositionName ?? "";
+        }
+        StateHasChanged();
+    }
+
+    private void SelectSup(UserResponseDTO s)
+    {
+        reqDto.SupervisorId = s.Id;
+        selectedSupName = s.Username;
+        selectedSupPos = s.PositionName;
+        showSupLookup = false;
+    }
+
+    private async Task ResetForm()
+    {
+        isEditMode = false;
+        currentUserId = null;
+        reqDto = new UserRequestDTO();
+        selectedSupName = "";
+        selectedSupPos = "";
+        await GenerateNextId();
+        NavigationManager.NavigateTo("/users/form");
+    }
+
+    private async Task HandleSubmit()
+    {
+        try 
+        {
+            reqDto.RoleId = 2; // User
+            reqDto.PasswordHash = ""; 
+            if (isEditMode) await UserService.UpdateUser(currentUserId!, reqDto, reqDto.SupervisorId);
+            else await UserService.CreateUser(reqDto);
+            NavigationManager.NavigateTo("/users");
+        }
+        catch (Exception ex) { await JSRuntime.InvokeVoidAsync("alert", "Error: " + ex.Message); }
+    }
+
+    private async Task HandleDelete()
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", "Hapus user ini?"))
+        {
+            await UserService.DeleteUser(currentUserId!);
+            NavigationManager.NavigateTo("/users");
+        }
+    }
+}

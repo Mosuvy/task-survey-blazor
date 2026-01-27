@@ -12,7 +12,7 @@ using TaskSurvey.Infrastructure.Data;
 namespace TaskSurvey.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260127035619_Init_With_Seeder")]
+    [Migration("20260127060300_Init_With_Seeder")]
     partial class Init_With_Seeder
     {
         /// <inheritdoc />
@@ -60,11 +60,11 @@ namespace TaskSurvey.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3935),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7973),
                             DocumentItemId = 2,
                             IsChecked = true,
                             TemplateItemDetailId = 1,
-                            UpdatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3939)
+                            UpdatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7975)
                         });
                 });
 
@@ -102,11 +102,11 @@ namespace TaskSurvey.Migrations
                         new
                         {
                             DocumentId = "SURVEY/2601/0001",
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3773),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7876),
                             RequesterId = "00000002",
                             Status = 0,
                             TemplateHeaderId = "TEMPLATE/2601/001",
-                            UpdatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3777)
+                            UpdatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7878)
                         });
                 });
 
@@ -148,19 +148,19 @@ namespace TaskSurvey.Migrations
                         {
                             Id = 1,
                             Answer = "Lingkungan kerja sangat kondusif dan mendukung produktivitas.",
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3850),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7921),
                             DocumentSurveyId = "SURVEY/2601/0001",
                             TemplateItemId = 1,
-                            UpdatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3853)
+                            UpdatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7923)
                         },
                         new
                         {
                             Id = 2,
                             Answer = "Selected",
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3857),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7926),
                             DocumentSurveyId = "SURVEY/2601/0001",
                             TemplateItemId = 2,
-                            UpdatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3859)
+                            UpdatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7928)
                         });
                 });
 
@@ -188,25 +188,25 @@ namespace TaskSurvey.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 97, DateTimeKind.Local).AddTicks(2894),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 718, DateTimeKind.Local).AddTicks(1748),
                             PositionLevel = "Officer"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 97, DateTimeKind.Local).AddTicks(2898),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 718, DateTimeKind.Local).AddTicks(1752),
                             PositionLevel = "Section Head"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 97, DateTimeKind.Local).AddTicks(2900),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 718, DateTimeKind.Local).AddTicks(1754),
                             PositionLevel = "Departement Head"
                         },
                         new
                         {
                             Id = 4,
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 97, DateTimeKind.Local).AddTicks(2902),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 718, DateTimeKind.Local).AddTicks(1756),
                             PositionLevel = "Director"
                         });
                 });
@@ -235,13 +235,13 @@ namespace TaskSurvey.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 97, DateTimeKind.Local).AddTicks(2621),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 718, DateTimeKind.Local).AddTicks(1386),
                             RoleName = "Supervisor"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 97, DateTimeKind.Local).AddTicks(2650),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 718, DateTimeKind.Local).AddTicks(1425),
                             RoleName = "User"
                         });
                 });
@@ -278,11 +278,11 @@ namespace TaskSurvey.Migrations
                         new
                         {
                             Id = "TEMPLATE/2601/001",
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3363),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7730),
                             PositionId = 3,
                             TemplateName = "Survey Kepuasan Kerja",
                             Theme = "Blue Corporate",
-                            UpdatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3373)
+                            UpdatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7732)
                         });
                 });
 
@@ -321,20 +321,20 @@ namespace TaskSurvey.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3479),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7781),
                             Question = "Apa pendapat Anda tentang lingkungan kerja?",
                             TemplateHeaderId = "TEMPLATE/2601/001",
                             Type = 2,
-                            UpdatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3488)
+                            UpdatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7783)
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3492),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7787),
                             Question = "Fasilitas yang Anda gunakan:",
                             TemplateHeaderId = "TEMPLATE/2601/001",
                             Type = 1,
-                            UpdatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3494)
+                            UpdatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7788)
                         });
                 });
 
@@ -369,18 +369,18 @@ namespace TaskSurvey.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3672),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7830),
                             Item = "Laptop Inventaris",
                             TemplateItemId = 2,
-                            UpdatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3678)
+                            UpdatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7832)
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3681),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7836),
                             Item = "Ruang Meeting",
                             TemplateItemId = 2,
-                            UpdatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3683)
+                            UpdatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7837)
                         });
                 });
 
@@ -425,23 +425,23 @@ namespace TaskSurvey.Migrations
                         new
                         {
                             Id = "00000001",
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 183, DateTimeKind.Local).AddTicks(7293),
-                            PasswordHash = "AQAAAAIAAYagAAAAEKafilhRdKTWxe9pneqG1DqsXCVHpr3XXPxM0T+vSaO73b8wzz3Zdf1Pe8ZkX/XDKA==",
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7268),
+                            PasswordHash = "AQAAAAIAAYagAAAAENb/mrki36X3CBmQbnVV+qpUULxZq19VfXZa1lrdwKRGkba8C84QFgMm21qABH/X5w==",
                             PositionId = 3,
                             PositionName = "Departement Leader",
                             RoleId = 1,
-                            UpdatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 183, DateTimeKind.Local).AddTicks(7336),
+                            UpdatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7501),
                             Username = "Wahyu Johan"
                         },
                         new
                         {
                             Id = "00000002",
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 183, DateTimeKind.Local).AddTicks(7355),
-                            PasswordHash = "AQAAAAIAAYagAAAAEKafilhRdKTWxe9pneqG1DqsXCVHpr3XXPxM0T+vSaO73b8wzz3Zdf1Pe8ZkX/XDKA==",
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7509),
+                            PasswordHash = "AQAAAAIAAYagAAAAENb/mrki36X3CBmQbnVV+qpUULxZq19VfXZa1lrdwKRGkba8C84QFgMm21qABH/X5w==",
                             PositionId = 1,
                             PositionName = "IT Staff",
                             RoleId = 2,
-                            UpdatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 183, DateTimeKind.Local).AddTicks(7364),
+                            UpdatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7511),
                             Username = "Andhika"
                         });
                 });
@@ -478,7 +478,7 @@ namespace TaskSurvey.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 1, 27, 10, 56, 19, 184, DateTimeKind.Local).AddTicks(3200),
+                            CreatedAt = new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7679),
                             SupervisorId = "00000001",
                             UserId = "00000002"
                         });
@@ -604,7 +604,7 @@ namespace TaskSurvey.Migrations
                     b.HasOne("TaskSurvey.Infrastructure.Models.User", "User")
                         .WithMany("SupervisorRelations")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Supervisor");

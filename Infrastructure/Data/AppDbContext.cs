@@ -29,7 +29,7 @@ namespace TaskSurvey.Infrastructure.Data
                 entity.HasOne(ur => ur.User)
                     .WithMany(u => u.SupervisorRelations)
                     .HasForeignKey(ur => ur.UserId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(ur => ur.Supervisor)
                     .WithMany(u => u.SubordinateRelations)

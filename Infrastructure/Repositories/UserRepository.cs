@@ -94,10 +94,23 @@ namespace TaskSurvey.Infrastructure.Repositories
 
         public async Task<bool> DeleteUserAsync(string id)
         {
-            var isUserExist = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
-            if(isUserExist == null) return false;
+            var user = await _context.Users
+                .Include(u => u.SupervisorRelations)
+                .Include(u => u.SubordinateRelations)
+                .FirstOrDefaultAsync(u => u.Id == id);
 
-            _context.Users.Remove(isUserExist);
+            if (user == null) return false;
+
+            if (user.SupervisorRelations!.Any())
+            {
+                _context.UserRelations.RemoveRange(user.SupervisorRelations!);
+            }
+            
+            if (user.SubordinateRelations!.Any())
+            {
+                _context.UserRelations.RemoveRange(user.SubordinateRelations!);
+            }
+            _context.Users.Remove(user);
             await _context.SaveChangesAsync();
             return true;
         }

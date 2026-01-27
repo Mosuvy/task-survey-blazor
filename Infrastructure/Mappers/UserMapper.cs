@@ -52,8 +52,10 @@ namespace TaskSurvey.Infrastructure.Mappers
                 {
                     Id = user.Id,
                     Username = user.Username,
+                    PositionId = user.PositionId,
                     Position = posDto,
                     PositionName = user.PositionName,
+                    RoleId = user.RoleId,
                     Role = roleDto,
                     Supervisor = supervisorDto,
                     CreatedAt = user.CreatedAt,
