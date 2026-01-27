@@ -6,10 +6,11 @@ using TaskSurvey.Infrastructure.DTOs.RoleDTOs;
 using TaskSurvey.Infrastructure.Mappers;
 using TaskSurvey.Infrastructure.Models;
 using TaskSurvey.Infrastructure.Repositories.IRepositories;
+using TaskSurvey.Infrastructure.Services.IServices;
 
 namespace TaskSurvey.Infrastructure.Services
 {
-    public class RoleService
+    public class RoleService : IRoleService
     {
         private readonly IRoleRepository _repository;
 

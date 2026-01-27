@@ -5,10 +5,11 @@ using System.Threading.Tasks;
 using TaskSurvey.Infrastructure.DTOs.PositionDTOs;
 using TaskSurvey.Infrastructure.Mappers;
 using TaskSurvey.Infrastructure.Repositories.IRepositories;
+using TaskSurvey.Infrastructure.Services.IServices;
 
 namespace TaskSurvey.Infrastructure.Services
 {
-    public class PositionService
+    public class PositionService : IPositionService
     {
         private readonly IPositionRepository _repository;
 

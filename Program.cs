@@ -1,8 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using TaskSurvey.Components;
 using TaskSurvey.Infrastructure.Data;
+using TaskSurvey.Infrastructure.Repositories;
+using TaskSurvey.Infrastructure.Repositories.IRepositories;
+using TaskSurvey.Infrastructure.Services;
+using TaskSurvey.Infrastructure.Services.IServices;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
@@ -10,9 +18,20 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
-// Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+builder.Services.AddControllers();
+
+// Add Repository
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IPositionRepository, PositionRepository>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();
+
+// Add Service
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPositionService, PositionService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 

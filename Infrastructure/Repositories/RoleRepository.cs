@@ -5,10 +5,11 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TaskSurvey.Infrastructure.Data;
 using TaskSurvey.Infrastructure.Models;
+using TaskSurvey.Infrastructure.Repositories.IRepositories;
 
 namespace TaskSurvey.Infrastructure.Repositories
 {
-    public class RoleRepository
+    public class RoleRepository : IRoleRepository
     {
         private readonly AppDbContext _context;
 
