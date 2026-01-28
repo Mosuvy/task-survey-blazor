@@ -15,10 +15,12 @@ namespace TaskSurvey.Infrastructure.Models
         public required string DocumentSurveyId { get; set; }
         public virtual DocumentSurvey? DocumentSurvey { get; set; }
         [ForeignKey("TemplateItemId")]
-        public int TemplateItemId { get; set; }
+        public int? TemplateItemId { get; set; }
         public virtual TemplateItem? TemplateItem { get; set; }
         public required string Answer { get; set; }
         public int OrderNo { get; set; }
+        public required string Question { get; set; }
+        public required QuestionType Type { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         

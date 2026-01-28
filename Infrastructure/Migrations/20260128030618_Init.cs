@@ -5,10 +5,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
-namespace TaskSurvey.Migrations
+namespace TaskSurvey.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class Init_With_Seeder : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -100,6 +100,7 @@ namespace TaskSurvey.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     TemplateHeaderId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    OrderNo = table.Column<int>(type: "int", nullable: false),
                     Question = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Type = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -123,7 +124,7 @@ namespace TaskSurvey.Migrations
                     DocumentId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     RequesterId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
-                    TemplateHeaderId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    TemplateHeaderId = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -135,12 +136,13 @@ namespace TaskSurvey.Migrations
                         column: x => x.TemplateHeaderId,
                         principalTable: "TemplateHeaders",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_DocumentSurveys_Users_RequesterId",
                         column: x => x.RequesterId,
                         principalTable: "Users",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -199,8 +201,11 @@ namespace TaskSurvey.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     DocumentSurveyId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    TemplateItemId = table.Column<int>(type: "int", nullable: false),
+                    TemplateItemId = table.Column<int>(type: "int", nullable: true),
                     Answer = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    OrderNo = table.Column<int>(type: "int", nullable: false),
+                    Question = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -218,7 +223,7 @@ namespace TaskSurvey.Migrations
                         column: x => x.TemplateItemId,
                         principalTable: "TemplateItems",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
@@ -228,7 +233,8 @@ namespace TaskSurvey.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     DocumentItemId = table.Column<int>(type: "int", nullable: false),
-                    TemplateItemDetailId = table.Column<int>(type: "int", nullable: false),
+                    TemplateItemDetailId = table.Column<int>(type: "int", nullable: true),
+                    Item = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IsChecked = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
@@ -247,7 +253,7 @@ namespace TaskSurvey.Migrations
                         column: x => x.TemplateItemDetailId,
                         principalTable: "TemplateItemDetails",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.InsertData(
@@ -255,10 +261,10 @@ namespace TaskSurvey.Migrations
                 columns: new[] { "Id", "CreatedAt", "PositionLevel" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(2026, 1, 27, 13, 2, 59, 718, DateTimeKind.Local).AddTicks(1748), "Officer" },
-                    { 2, new DateTime(2026, 1, 27, 13, 2, 59, 718, DateTimeKind.Local).AddTicks(1752), "Section Head" },
-                    { 3, new DateTime(2026, 1, 27, 13, 2, 59, 718, DateTimeKind.Local).AddTicks(1754), "Departement Head" },
-                    { 4, new DateTime(2026, 1, 27, 13, 2, 59, 718, DateTimeKind.Local).AddTicks(1756), "Director" }
+                    { 1, new DateTime(2026, 1, 28, 10, 6, 17, 303, DateTimeKind.Local).AddTicks(7701), "Officer" },
+                    { 2, new DateTime(2026, 1, 28, 10, 6, 17, 303, DateTimeKind.Local).AddTicks(7705), "Section Head" },
+                    { 3, new DateTime(2026, 1, 28, 10, 6, 17, 303, DateTimeKind.Local).AddTicks(7707), "Departement Head" },
+                    { 4, new DateTime(2026, 1, 28, 10, 6, 17, 303, DateTimeKind.Local).AddTicks(7710), "Director" }
                 });
 
             migrationBuilder.InsertData(
@@ -266,50 +272,51 @@ namespace TaskSurvey.Migrations
                 columns: new[] { "Id", "CreatedAt", "RoleName" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(2026, 1, 27, 13, 2, 59, 718, DateTimeKind.Local).AddTicks(1386), "Supervisor" },
-                    { 2, new DateTime(2026, 1, 27, 13, 2, 59, 718, DateTimeKind.Local).AddTicks(1425), "User" }
+                    { 1, new DateTime(2026, 1, 28, 10, 6, 17, 303, DateTimeKind.Local).AddTicks(7369), "Supervisor" },
+                    { 2, new DateTime(2026, 1, 28, 10, 6, 17, 303, DateTimeKind.Local).AddTicks(7407), "User" }
                 });
 
             migrationBuilder.InsertData(
                 table: "TemplateHeaders",
                 columns: new[] { "Id", "CreatedAt", "PositionId", "TemplateName", "Theme", "UpdatedAt" },
-                values: new object[] { "TEMPLATE/2601/001", new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7730), 3, "Survey Kepuasan Kerja", "Blue Corporate", new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7732) });
+                values: new object[] { "TEMPLATE/2601/001", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3225), 3, "Survey Kepuasan Kerja", "Blue Corporate", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3227) });
 
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "Id", "CreatedAt", "PasswordHash", "PositionId", "PositionName", "RoleId", "UpdatedAt", "Username" },
                 values: new object[,]
                 {
-                    { "00000001", new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7268), "AQAAAAIAAYagAAAAENb/mrki36X3CBmQbnVV+qpUULxZq19VfXZa1lrdwKRGkba8C84QFgMm21qABH/X5w==", 3, "Departement Leader", 1, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7501), "Wahyu Johan" },
-                    { "00000002", new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7509), "AQAAAAIAAYagAAAAENb/mrki36X3CBmQbnVV+qpUULxZq19VfXZa1lrdwKRGkba8C84QFgMm21qABH/X5w==", 1, "IT Staff", 2, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7511), "Andhika" }
+                    { "00000001", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3005), "AQAAAAIAAYagAAAAEJb00evieNA/a3/9QCMXVQ5wg0gXZqIUuJx7087lO8VxXP8JC4pfR/mnjXrpjBd/nw==", 3, "Departement Leader", 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3046), "Wahyu Johan" },
+                    { "00000002", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3054), "AQAAAAIAAYagAAAAEJb00evieNA/a3/9QCMXVQ5wg0gXZqIUuJx7087lO8VxXP8JC4pfR/mnjXrpjBd/nw==", 3, "Departement Leader", 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3055), "Edi" },
+                    { "00000003", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3058), "AQAAAAIAAYagAAAAEJb00evieNA/a3/9QCMXVQ5wg0gXZqIUuJx7087lO8VxXP8JC4pfR/mnjXrpjBd/nw==", 1, "IT Staff", 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3060), "Andhika" }
                 });
 
             migrationBuilder.InsertData(
                 table: "DocumentSurveys",
                 columns: new[] { "DocumentId", "CreatedAt", "RequesterId", "Status", "TemplateHeaderId", "UpdatedAt" },
-                values: new object[] { "SURVEY/2601/0001", new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7876), "00000002", 0, "TEMPLATE/2601/001", new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7878) });
+                values: new object[] { "SURVEY/2601/0001", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3498), "00000002", 0, "TEMPLATE/2601/001", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3500) });
 
             migrationBuilder.InsertData(
                 table: "TemplateItems",
-                columns: new[] { "Id", "CreatedAt", "Question", "TemplateHeaderId", "Type", "UpdatedAt" },
+                columns: new[] { "Id", "CreatedAt", "OrderNo", "Question", "TemplateHeaderId", "Type", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7781), "Apa pendapat Anda tentang lingkungan kerja?", "TEMPLATE/2601/001", 2, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7783) },
-                    { 2, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7787), "Fasilitas yang Anda gunakan:", "TEMPLATE/2601/001", 1, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7788) }
+                    { 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3404), 1, "Apa pendapat Anda tentang lingkungan kerja?", "TEMPLATE/2601/001", 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3406) },
+                    { 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3409), 2, "Fasilitas yang Anda gunakan:", "TEMPLATE/2601/001", 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3411) }
                 });
 
             migrationBuilder.InsertData(
                 table: "UserRelations",
                 columns: new[] { "Id", "CreatedAt", "SupervisorId", "UserId" },
-                values: new object[] { 1, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7679), "00000001", "00000002" });
+                values: new object[] { 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3188), "00000001", "00000002" });
 
             migrationBuilder.InsertData(
                 table: "DocumentSurveyItems",
-                columns: new[] { "Id", "Answer", "CreatedAt", "DocumentSurveyId", "TemplateItemId", "UpdatedAt" },
+                columns: new[] { "Id", "Answer", "CreatedAt", "DocumentSurveyId", "OrderNo", "Question", "TemplateItemId", "Type", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { 1, "Lingkungan kerja sangat kondusif dan mendukung produktivitas.", new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7921), "SURVEY/2601/0001", 1, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7923) },
-                    { 2, "Selected", new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7926), "SURVEY/2601/0001", 2, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7928) }
+                    { 1, "Lingkungan kerja sangat kondusif dan mendukung produktivitas.", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3539), "SURVEY/2601/0001", 1, "Apa pendapat Anda tentang lingkungan kerja?", 1, 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3541) },
+                    { 2, "Selected", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3545), "SURVEY/2601/0001", 2, "Fasilitas yang Anda gunakan:", 2, 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3546) }
                 });
 
             migrationBuilder.InsertData(
@@ -317,14 +324,18 @@ namespace TaskSurvey.Migrations
                 columns: new[] { "Id", "CreatedAt", "Item", "TemplateItemId", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7830), "Laptop Inventaris", 2, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7832) },
-                    { 2, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7836), "Ruang Meeting", 2, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7837) }
+                    { 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3449), "Laptop Inventaris", 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3451) },
+                    { 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3453), "Ruang Meeting", 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3455) }
                 });
 
             migrationBuilder.InsertData(
                 table: "DocumentItemDetails",
-                columns: new[] { "Id", "CreatedAt", "DocumentItemId", "IsChecked", "TemplateItemDetailId", "UpdatedAt" },
-                values: new object[] { 1, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7973), 2, true, 1, new DateTime(2026, 1, 27, 13, 2, 59, 797, DateTimeKind.Local).AddTicks(7975) });
+                columns: new[] { "Id", "CreatedAt", "DocumentItemId", "IsChecked", "Item", "TemplateItemDetailId", "UpdatedAt" },
+                values: new object[,]
+                {
+                    { 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3577), 2, true, "Laptop Inventaris", 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3579) },
+                    { 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3582), 2, true, "Ruang Meeting", 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3584) }
+                });
 
             migrationBuilder.CreateIndex(
                 name: "IX_DocumentItemDetails_DocumentItemId",

@@ -9,10 +9,10 @@ namespace TaskSurvey.Infrastructure.Services.IServices
     public interface ITemplateService
     {
         Task<List<TemplateHeaderResponseDTO>> GetTemplateHeaders();
-        Task<List<TemplateHeaderResponseDTO>> GetTemplateByHeaderId(int headerId);
+        Task<TemplateHeaderResponseDTO?> GetTemplateByHeaderId(string headerId);
         Task<List<TemplateHeaderResponseDTO>?> GetTemplateByPositionId(int positionId);
-        Task<TemplateHeaderRequestDTO> CreateTemplate(TemplateHeaderRequestDTO req);
-        Task<TemplateHeaderRequestDTO> UpdateTemplate(string id, TemplateHeaderRequestDTO req);
+        Task<TemplateHeaderResponseDTO> CreateTemplate(TemplateHeaderRequestDTO req);
+        Task<TemplateHeaderResponseDTO?> UpdateTemplate(string id, TemplateHeaderRequestDTO req);
         Task<bool> DeleteTemplate(string id);
     }
 }

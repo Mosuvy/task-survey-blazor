@@ -54,19 +54,18 @@ namespace TaskSurvey.Infrastructure.Mappers
                 TemplateName = dto.TemplateName,
                 PositionId = dto.PositionId,
                 Theme = dto.Theme,
-                CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now,
                 Items = dto.Items.Select(i => new TemplateItem
                 {
+                    Id = i.Id,
                     OrderNo = i.OrderNo,
                     Question = i.Question,
-                    Type = Enum.Parse<QuestionType>(i.Type),
-                    CreatedAt = DateTime.Now,
+                    Type = i.Type,
                     UpdatedAt = DateTime.Now,
                     ItemDetails = i.ItemDetails.Select(d => new TemplateItemDetail
                     {
+                        Id = d.Id,
                         Item = d.Item,
-                        CreatedAt = DateTime.Now,
                         UpdatedAt = DateTime.Now
                     }).ToList()
                 }).ToList()

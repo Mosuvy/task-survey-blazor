@@ -1,4 +1,6 @@
 @page "/users/form"
+@using Microsoft.AspNetCore.WebUtilities
+@using TaskSurvey.Infrastructure.Utils
 @layout MainLayout
 @rendermode InteractiveServer
 @inject IUserService UserService
@@ -9,32 +11,43 @@
 
 <div class="container mt-4 mb-5">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card shadow">
+        <div class="col-lg-9">
+            <div class="card shadow border-0">
                 <div class="card-header bg-primary text-white p-3 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">@(isEditMode ? $"Edit User: {currentUserId}" : "Create New User")</h5>
+                    <h5 class="mb-0"><i class="bi bi-person-fill-gear me-2"></i> @(isEditMode ? $"Edit User: {currentUserId}" : "Create New User")</h5>
                 </div>
+                
+                @if (!string.IsNullOrEmpty(alertMessage))
+                {
+                    <div class="alert alert-danger border-0 rounded-0 m-0" role="alert">
+                        <i class="bi bi-exclamation-circle-fill me-2"></i> @alertMessage
+                    </div>
+                }
+
                 <div class="card-body p-4">
-                    <div class="row g-3">
+                    <div class="row g-4">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">User ID</label>
+                            <label class="form-label fw-bold text-secondary small text-uppercase">User ID</label>
                             <div class="input-group">
-                                <input type="text" class="form-control bg-light" value="@displayId" readonly />
-                                <button class="btn btn-outline-secondary" type="button" @onclick="() => showUserLookup = true">
-                                    <i class="bi bi-search"></i> Lookup
+                                <span class="input-group-text bg-light"><i class="bi bi-hash"></i></span>
+                                <input type="text" class="form-control bg-light fw-bold" value="@displayId" readonly />
+                                <button class="btn btn-outline-primary" type="button" @onclick="() => showUserLookup = true">
+                                    <i class="bi bi-search">Lookup</i>
                                 </button>
                             </div>
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Username</label>
-                            <input type="text" class="form-control" @bind="reqDto.Username" placeholder="Enter username" />
+                            <label class="form-label fw-bold text-secondary small text-uppercase">Username</label>
+                            <input type="text" class="form-control @GetValidationClass(reqDto.Username)" 
+                                   @bind="reqDto.Username" placeholder="Enter full name/username" />
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Position Level</label>
-                            <select class="form-select" @bind="reqDto.PositionId">
-                                <option value="0">Select Position...</option>
+                            <label class="form-label fw-bold text-secondary small text-uppercase">Position Level</label>
+                            <select class="form-select @(reqDto.PositionId == 0 && hasAttemptedSubmit ? "is-invalid" : "")" 
+                                    @bind="reqDto.PositionId">
+                                <option value="0">-- Select Position --</option>
                                 @foreach (var p in positions)
                                 {
                                     <option value="@p.Id">@p.PositionLevel</option>
@@ -43,40 +56,51 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Position Name</label>
-                            <input type="text" class="form-control" @bind="reqDto.PositionName" />
+                            <label class="form-label fw-bold text-secondary small text-uppercase">Position Name</label>
+                            <input type="text" class="form-control @GetValidationClass(reqDto.PositionName)" 
+                                   @bind="reqDto.PositionName" placeholder="e.g. Senior Developer" />
                         </div>
 
                         <div class="col-12 mt-4">
-                            <div class="p-3 border rounded bg-light">
-                                <h6 class="border-bottom pb-2 mb-3 text-secondary">Supervisor Details (Officer)</h6>
-                                <div class="row g-2">
+                            <div class="p-4 border rounded-3 bg-light shadow-sm">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="bi bi-person-badge-fill text-primary me-2"></i>
+                                    <h6 class="mb-0 fw-bold">Supervisor Details (Officer Only)</h6>
+                                </div>
+                                <div class="row g-3">
                                     <div class="col-md-4">
                                         <label class="small fw-bold">Officer ID</label>
-                                        <div class="input-group">
+                                        <div class="input-group input-group-sm">
                                             <input type="text" class="form-control" @bind="reqDto.SupervisorId" readonly />
                                             <button class="btn btn-dark" type="button" @onclick="() => showSupLookup = true">Lookup</button>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="small fw-bold">Name</label>
-                                        <input type="text" class="form-control" @bind="selectedSupName" readonly />
+                                        <input type="text" class="form-control form-control-sm bg-white" @bind="selectedSupName" readonly />
                                     </div>
                                     <div class="col-md-4">
                                         <label class="small fw-bold">Position</label>
-                                        <input type="text" class="form-control" @bind="selectedSupPos" readonly />
+                                        <input type="text" class="form-control form-control-sm bg-white" @bind="selectedSupPos" readonly />
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-white p-3 d-flex gap-2">
-                    <button class="btn btn-success px-4" @onclick="HandleSubmit">Submit</button>
-                    <button class="btn btn-primary" @onclick="ResetForm">New</button>
+
+                <div class="card-footer bg-light p-3 d-flex gap-2">
+                    <button class="btn btn-success px-5 shadow-sm" @onclick="HandleSubmit">
+                        <i class="bi bi-check-lg"></i> Submit
+                    </button>
+                    <button class="btn btn-primary shadow-sm" @onclick="ResetForm">
+                        <i class="bi bi-file-earmark-plus"></i> New
+                    </button>
                     @if (isEditMode)
                     {
-                        <button class="btn btn-danger" @onclick="HandleDelete">Delete</button>
+                        <button class="btn btn-danger shadow-sm" @onclick="HandleDelete">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
                     }
                     <button class="btn btn-outline-secondary ms-auto" @onclick='() => NavigationManager.NavigateTo("/users")'>Cancel</button>
                 </div>
@@ -85,57 +109,46 @@
     </div>
 </div>
 
-@if (showSupLookup)
+@if (showSupLookup || showUserLookup)
 {
-    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);">
         <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title">Select Supervisor (Role: Officer)</h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="() => showSupLookup = false"></button>
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header @(showUserLookup ? "bg-primary" : "bg-dark") text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-search me-2"></i>
+                        @(showUserLookup ? "Select User to Edit" : "Select Supervisor (Officer)")
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModals"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="text" class="form-control mb-3" placeholder="Search..." @bind="supSearchQuery" @bind:event="oninput" />
-                    <div class="table-responsive" style="max-height: 300px;">
-                        <table class="table table-hover text-center">
-                            <thead><tr><th>ID</th><th>Username</th><th>Action</th></tr></thead>
-                            <tbody>
-                                @foreach (var s in supLookupList.Where(x => x.Username.Contains(supSearchQuery, StringComparison.OrdinalIgnoreCase)))
-                                {
-                                    <tr>
-                                        <td>@s.Id</td><td>@s.Username</td>
-                                        <td><button class="btn btn-primary btn-sm" @onclick="() => SelectSup(s)">Select</button></td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text"><i class="bi bi-filter"></i></span>
+                        <input type="text" class="form-control" placeholder="Search by name or ID..." @bind="searchQuery" @bind:event="oninput" />
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-@if (showUserLookup)
-{
-    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">Select User to Edit</h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="() => showUserLookup = false"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="text" class="form-control mb-3" placeholder="Search ID or Name..." @bind="userSearchQuery" @bind:event="oninput" />
-                    <div class="table-responsive" style="max-height: 300px;">
-                        <table class="table table-hover text-center">
-                            <thead><tr><th>ID</th><th>Username</th><th>Action</th></tr></thead>
+                    <div class="table-responsive" style="max-height: 400px;">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light text-center">
+                                <tr><th>ID</th><th>Username</th><th>Position</th><th>Action</th></tr>
+                            </thead>
                             <tbody>
-                                @foreach (var u in allUsersList.Where(x => x.Username.Contains(userSearchQuery, StringComparison.OrdinalIgnoreCase) || x.Id.Contains(userSearchQuery)))
+                                @{
+                                    var list = showUserLookup ? allUsersList : supLookupList;
+                                    var filtered = list.Where(x => x.Username.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) || x.Id.Contains(searchQuery));
+                                }
+                                @foreach (var item in filtered)
                                 {
                                     <tr>
-                                        <td>@u.Id</td><td>@u.Username</td>
-                                        <td><button class="btn btn-primary btn-sm" @onclick="() => SelectUserToEdit(u.Id)">Edit This</button></td>
+                                        <td class="fw-bold">@item.Id</td>
+                                        <td>@item.Username</td>
+                                        <td><span class="badge bg-secondary">@item.PositionName</span></td>
+                                        <td class="text-center">
+                                            @if (showUserLookup) {
+                                                <button class="btn btn-sm btn-primary" @onclick="() => SelectUserToEdit(item.Id)">Edit</button>
+                                            } else {
+                                                <button class="btn btn-sm btn-dark" @onclick="() => SelectSup(item)">Select</button>
+                                            }
+                                        </td>
                                     </tr>
                                 }
                             </tbody>
@@ -158,15 +171,16 @@
     private bool isEditMode = false;
     private bool showSupLookup = false;
     private bool showUserLookup = false;
-    private string supSearchQuery = "";
-    private string userSearchQuery = "";
+    private bool hasAttemptedSubmit = false;
+    private string searchQuery = "";
+    private string? alertMessage;
     private string selectedSupName = "";
     private string selectedSupPos = "";
 
     protected override async Task OnInitializedAsync()
     {
         positions = await PositionService.GetPositions();
-        supLookupList = (await UserService.GetUserByRoleId(1))!;
+        supLookupList = (await UserService.GetUserByRoleId(1)) ?? new();
         allUsersList = await UserService.GetUsers();
 
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
@@ -180,11 +194,14 @@
         }
     }
 
+    private string GetValidationClass(string? value) => 
+        hasAttemptedSubmit && string.IsNullOrWhiteSpace(value) ? "is-invalid" : "";
+
     private async Task GenerateNextId() => displayId = await IdGeneratorUtil.GetNextFormattedUserId(DbContext);
 
     private async Task SelectUserToEdit(string id)
     {
-        showUserLookup = false;
+        CloseModals();
         currentUserId = id;
         isEditMode = true;
         displayId = id;
@@ -207,12 +224,40 @@
         reqDto.SupervisorId = s.Id;
         selectedSupName = s.Username;
         selectedSupPos = s.PositionName;
-        showSupLookup = false;
+        CloseModals();
+    }
+
+    private void CloseModals() { showSupLookup = false; showUserLookup = false; searchQuery = ""; }
+
+    private async Task HandleSubmit()
+    {
+        hasAttemptedSubmit = true;
+        alertMessage = null;
+
+        if (string.IsNullOrWhiteSpace(reqDto.Username) || reqDto.PositionId == 0 || string.IsNullOrWhiteSpace(reqDto.PositionName) || string.IsNullOrWhiteSpace(reqDto.SupervisorId))
+        {
+            alertMessage = "Please complete all required fields.";
+            return;
+        }
+
+        try 
+        {
+            reqDto.RoleId = 2; // User
+            reqDto.PasswordHash = ""; 
+
+            if (isEditMode) await UserService.UpdateUser(currentUserId!, reqDto, reqDto.SupervisorId);
+            else await UserService.CreateUser(reqDto);
+            
+            NavigationManager.NavigateTo("/users");
+        }
+        catch (Exception ex) { alertMessage = "Error: " + ex.Message; }
     }
 
     private async Task ResetForm()
     {
         isEditMode = false;
+        hasAttemptedSubmit = false;
+        alertMessage = null;
         currentUserId = null;
         reqDto = new UserRequestDTO();
         selectedSupName = "";
@@ -221,22 +266,9 @@
         NavigationManager.NavigateTo("/users/form");
     }
 
-    private async Task HandleSubmit()
-    {
-        try 
-        {
-            reqDto.RoleId = 2; // User
-            reqDto.PasswordHash = ""; 
-            if (isEditMode) await UserService.UpdateUser(currentUserId!, reqDto, reqDto.SupervisorId);
-            else await UserService.CreateUser(reqDto);
-            NavigationManager.NavigateTo("/users");
-        }
-        catch (Exception ex) { await JSRuntime.InvokeVoidAsync("alert", "Error: " + ex.Message); }
-    }
-
     private async Task HandleDelete()
     {
-        if (await JSRuntime.InvokeAsync<bool>("confirm", "Hapus user ini?"))
+        if (await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this user?"))
         {
             await UserService.DeleteUser(currentUserId!);
             NavigationManager.NavigateTo("/users");

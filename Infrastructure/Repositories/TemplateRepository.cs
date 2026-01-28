@@ -55,6 +55,18 @@ namespace TaskSurvey.Infrastructure.Repositories
             templateHeader.CreatedAt = DateTime.Now;
             templateHeader.UpdatedAt = DateTime.Now;
 
+            foreach (var item in templateHeader.Items!)
+            {
+                item.CreatedAt = DateTime.Now;
+                item.UpdatedAt = DateTime.Now;
+
+                foreach (var detail in item.ItemDetails!)
+                {
+                    detail.CreatedAt = DateTime.Now;
+                    detail.UpdatedAt = DateTime.Now;
+                }
+            }
+
             _context.TemplateHeaders.Add(templateHeader);
             await _context.SaveChangesAsync();
             
@@ -63,61 +75,88 @@ namespace TaskSurvey.Infrastructure.Repositories
 
         public async Task<TemplateHeader?> UpdateTemplateAsync(string id, TemplateHeader templateHeader)
         {
-            var existingHeader = await _context.TemplateHeaders
-                .Include(h => h.Items)!
+            var dbHeader = await _context.TemplateHeaders
+                .Include(h => h.Items!)
                     .ThenInclude(i => i.ItemDetails)
                 .FirstOrDefaultAsync(h => h.Id == id);
 
-            if (existingHeader == null) return null;
+            if (dbHeader == null) return null;
 
-            _context.Entry(existingHeader).CurrentValues.SetValues(templateHeader);
-            existingHeader.UpdatedAt = DateTime.Now;
+            dbHeader.TemplateName = templateHeader.TemplateName;
+            dbHeader.PositionId = templateHeader.PositionId;
+            dbHeader.Theme = templateHeader.Theme;
+            dbHeader.UpdatedAt = DateTime.Now;
 
-            foreach (var existingItem in existingHeader.Items!.ToList())
+            var incomingIds = templateHeader.Items?.Select(i => i.Id).ToList() ?? new List<int>();
+
+            var toDelete = dbHeader.Items!.Where(di => !incomingIds.Contains(di.Id)).ToList();
+            foreach (var item in toDelete)
             {
-                if (!templateHeader.Items!.Any(i => i.Id == existingItem.Id))
-                    _context.TemplateItems.Remove(existingItem);
+                _context.TemplateItems.Remove(item);
             }
 
-            foreach (var requestItem in templateHeader.Items!)
+            foreach (var ri in templateHeader.Items ?? new List<TemplateItem>())
             {
-                var existingItem = existingHeader.Items!.FirstOrDefault(i => i.Id == requestItem.Id && i.Id != 0);
+                var existingItem = dbHeader.Items!.FirstOrDefault(di => di.Id == ri.Id && di.Id != 0);
 
                 if (existingItem != null)
                 {
-                    _context.Entry(existingItem).CurrentValues.SetValues(requestItem);
-                    
-                    foreach (var existingDetail in existingItem.ItemDetails!.ToList())
-                    {
-                        if (!requestItem.ItemDetails!.Any(d => d.Id == existingDetail.Id))
-                            _context.TemplateItemDetails.Remove(existingDetail);
-                    }
+                    existingItem.Question = ri.Question;
+                    existingItem.Type = ri.Type;
+                    existingItem.OrderNo = ri.OrderNo;
+                    existingItem.UpdatedAt = DateTime.Now;
 
-                    foreach (var requestDetail in requestItem.ItemDetails!)
+                    var incomingDetailIds = ri.ItemDetails?.Select(d => d.Id).ToList() ?? new List<int>();
+                    var detailsToDelete = existingItem.ItemDetails!.Where(ed => !incomingDetailIds.Contains(ed.Id)).ToList();
+                    foreach (var d in detailsToDelete) _context.TemplateItemDetails.Remove(d);
+
+                    foreach (var rd in ri.ItemDetails ?? new List<TemplateItemDetail>())
                     {
-                        var existingDetail = existingItem.ItemDetails!.FirstOrDefault(d => d.Id == requestDetail.Id && d.Id != 0);
-                        if (existingDetail != null)
-                            _context.Entry(existingDetail).CurrentValues.SetValues(requestDetail);
-                        else
-                            existingItem.ItemDetails!.Add(requestDetail);
+                        var ed = existingItem.ItemDetails!.FirstOrDefault(x => x.Id == rd.Id && x.Id != 0);
+                        if (ed != null) { ed.Item = rd.Item; }
+                        else {
+                            rd.Id = 0;
+                            existingItem.ItemDetails!.Add(rd);
+                        }
                     }
                 }
                 else
                 {
-                    existingHeader.Items!.Add(requestItem);
+                    ri.Id = 0; 
+                    if(ri.ItemDetails != null) {
+                        foreach(var d in ri.ItemDetails) d.Id = 0;
+                    }
+                    dbHeader.Items!.Add(ri);
                 }
             }
 
-            await _context.SaveChangesAsync();
-            return existingHeader;
+            try {
+                await _context.SaveChangesAsync();
+            } catch (Exception ex) {
+                Console.WriteLine($"DB Error: {ex.Message}");
+                throw;
+            }
+            
+            return dbHeader;
         }
 
         public async Task<bool> DeleteTemplateAsync(string id)
         {
-            var header = await _context.TemplateHeaders.FindAsync(id);
-            if (header == null) return false;
+            var header = await _context.TemplateHeaders
+                .Include(h => h.Items)
+                .FirstOrDefaultAsync(h => h.Id == id);
 
+            if (header == null) return false;
+            var relatedSurveys = await _context.DocumentSurveys
+                .Where(ds => ds.TemplateHeaderId == id)
+                .ToListAsync();
+
+            foreach (var survey in relatedSurveys)
+            {
+                survey.TemplateHeaderId = null;
+            }
             _context.TemplateHeaders.Remove(header);
+
             return await _context.SaveChangesAsync() > 0;
         }
     }

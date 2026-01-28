@@ -58,12 +58,12 @@ namespace TaskSurvey.Infrastructure.Data
                 entity.HasOne(ds => ds.Requester)
                     .WithMany(u => u.Documents)
                     .HasForeignKey(ds => ds.RequesterId)
-                    .OnDelete(DeleteBehavior.NoAction);
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(ds => ds.Header)
                     .WithMany(th => th.Surveys)
                     .HasForeignKey(ds => ds.TemplateHeaderId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<DocumentSurveyItem>(entity =>
@@ -76,7 +76,7 @@ namespace TaskSurvey.Infrastructure.Data
                 entity.HasOne(di => di.TemplateItem)
                     .WithMany(ti => ti.SurveyItems)
                     .HasForeignKey(di => di.TemplateItemId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<DocumentItemDetail>(entity =>
@@ -89,7 +89,7 @@ namespace TaskSurvey.Infrastructure.Data
                 entity.HasOne(did => did.TemplateItemDetail)
                     .WithMany(tid => tid.ItemDetails)
                     .HasForeignKey(did => did.TemplateItemDetailId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<User>(entity =>
@@ -167,6 +167,17 @@ namespace TaskSurvey.Infrastructure.Data
                 new User
                 {
                     Id = "00000002",
+                    Username = "Edi",
+                    PasswordHash = password,
+                    PositionId = 3,
+                    PositionName = "Departement Leader",
+                    RoleId = 1,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                },
+                new User
+                {
+                    Id = "00000003",
                     Username = "Andhika",
                     PasswordHash = password,
                     PositionId = 1,
@@ -259,6 +270,9 @@ namespace TaskSurvey.Infrastructure.Data
                     Id = 1,
                     DocumentSurveyId = "SURVEY/2601/0001",
                     TemplateItemId = 1,
+                    Question = "Apa pendapat Anda tentang lingkungan kerja?",
+                    Type = QuestionType.TextArea,
+                    OrderNo = 1,
                     Answer = "Lingkungan kerja sangat kondusif dan mendukung produktivitas.",
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
@@ -268,6 +282,9 @@ namespace TaskSurvey.Infrastructure.Data
                     Id = 2,
                     DocumentSurveyId = "SURVEY/2601/0001",
                     TemplateItemId = 2,
+                    Question = "Fasilitas yang Anda gunakan:",
+                    Type = QuestionType.CheckBox,
+                    OrderNo = 2,
                     Answer = "Selected",
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
@@ -280,6 +297,17 @@ namespace TaskSurvey.Infrastructure.Data
                     Id = 1,
                     DocumentItemId = 2,
                     TemplateItemDetailId = 1,
+                    Item = "Laptop Inventaris",
+                    IsChecked = true,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                },
+                new DocumentItemDetail
+                {
+                    Id = 2,
+                    DocumentItemId = 2,
+                    TemplateItemDetailId = 2,
+                    Item = "Ruang Meeting",
                     IsChecked = true,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now

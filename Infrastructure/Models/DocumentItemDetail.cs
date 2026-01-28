@@ -15,8 +15,9 @@ namespace TaskSurvey.Infrastructure.Models
         public int DocumentItemId { get; set; }
         public virtual DocumentSurveyItem? DocumentSurveyItem { get; set; }
         [ForeignKey("TemplateItemDetailId")]
-        public int TemplateItemDetailId { get; set; }
+        public int? TemplateItemDetailId { get; set; }
         public virtual TemplateItemDetail? TemplateItemDetail { get; set; }
+        public required string Item { get; set; }
         public bool IsChecked { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

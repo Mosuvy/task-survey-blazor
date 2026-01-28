@@ -16,7 +16,7 @@ namespace TaskSurvey.Infrastructure.Models
         public virtual User? Requester { get; set; }
         public StatusType Status { get; set; }
         [ForeignKey("TemplateHeaderId")]
-        public required string TemplateHeaderId { get; set; }
+        public string? TemplateHeaderId { get; set; }
         public virtual TemplateHeader? Header { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

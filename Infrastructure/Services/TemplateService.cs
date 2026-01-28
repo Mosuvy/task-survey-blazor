@@ -5,10 +5,11 @@ using System.Threading.Tasks;
 using TaskSurvey.Infrastructure.DTOs.TemplateDTOs;
 using TaskSurvey.Infrastructure.Mappers;
 using TaskSurvey.Infrastructure.Repositories.IRepositories;
+using TaskSurvey.Infrastructure.Services.IServices;
 
 namespace TaskSurvey.Infrastructure.Services
 {
-    public class TemplateService
+    public class TemplateService : ITemplateService
     {
         private readonly ITemplateRepository _repository;
 
@@ -47,6 +48,8 @@ namespace TaskSurvey.Infrastructure.Services
         public async Task<TemplateHeaderResponseDTO?> UpdateTemplate(string id, TemplateHeaderRequestDTO req)
         {
             var templateEntity = TemplateMapper.ToEntity(req);
+            Console.WriteLine($"DEBUG: Jumlah Item yang dikirim ke Repo: {templateEntity.Items!.Count}");
+            foreach(var item in templateEntity.Items) Console.WriteLine($"Item ID: {item.Id}");
             var updatedTemplate = await _repository.UpdateTemplateAsync(id, templateEntity);
             if (updatedTemplate == null) return null;
             return TemplateMapper.ToTemplateHeaderResponseDTO(updatedTemplate);
