@@ -1,30 +1,109 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">TaskSurvey</a>
+﻿<div class="d-flex flex-column h-100" style="background: #f8f9fa;">
+    <!-- Brand -->
+    <div class="p-3 border-bottom" style="background: #0ea5e9;">
+        <a class="navbar-brand text-white text-decoration-none d-flex align-items-center gap-2" href="/">
+            <i class="bi bi-clipboard-check fs-4"></i>
+            <span class="fw-bold fs-5">TaskSurvey</span>
+        </a>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-fill p-3">
+        <ul class="nav flex-column gap-1">
+            <li class="nav-item">
+                <NavLink class="nav-link d-flex align-items-center gap-2 rounded-3 px-3 py-2" 
+                         href="/dashboard" 
+                         Match="NavLinkMatch.All">
+                    <i class="bi bi-speedometer2 fs-5"></i>
+                    <span class="fw-semibold">Dashboard</span>
+                </NavLink>
+            </li>
+
+            <li class="nav-item">
+                <NavLink class="nav-link d-flex align-items-center gap-2 rounded-3 px-3 py-2" 
+                         href="/users">
+                    <i class="bi bi-people-fill fs-5"></i>
+                    <span class="fw-semibold">Users</span>
+                </NavLink>
+            </li>
+
+            <li class="nav-item">
+                <NavLink class="nav-link d-flex align-items-center gap-2 rounded-3 px-3 py-2" 
+                         href="/templates">
+                    <i class="bi bi-file-earmark-text-fill fs-5"></i>
+                    <span class="fw-semibold">Templates</span>
+                </NavLink>
+            </li>
+
+            <li class="nav-item">
+                <NavLink class="nav-link d-flex align-items-center gap-2 rounded-3 px-3 py-2" 
+                         href="/surveys">
+                    <i class="bi bi-clipboard-data-fill fs-5"></i>
+                    <span class="fw-semibold">Surveys</span>
+                </NavLink>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="p-3 border-top mt-auto">
+        <button class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 rounded-3 py-2 fw-bold transition-all" 
+                @onclick="HandleLogout">
+            <i class="bi bi-box-arrow-right fs-5"></i>
+            <span>Sign Out</span>
+        </button>
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+<style>
+    .nav-link {
+        color: #64748b;
+        transition: all 0.2s ease;
+    }
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+    .nav-link:hover {
+        background-color: rgba(14, 165, 233, 0.1);
+        color: #0ea5e9;
+    }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
+    .nav-link.active {
+        background-color: #0ea5e9;
+        color: white;
+    }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
+    .nav-link.active i {
+        color: white;
+    }
+    .btn-outline-danger {
+        border-color: #fee2e2;
+        color: #ef4444;
+    }
 
+    .btn-outline-danger:hover {
+        background-color: #ef4444;
+        color: white;
+        border-color: #ef4444;
+        box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
+    }
+    
+    .transition-all {
+        transition: all 0.2s ease;
+    }
+</style>
+
+@code {
+    @inject NavigationManager NavigationManager
+    @inject IJSRuntime JS
+    @inject TaskSurvey.StateServices.AuthState AuthState
+
+    private async Task HandleLogout()
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Apakah Anda yakin ingin keluar?");
+        
+        if (confirmed)
+        {
+            await JS.InvokeVoidAsync("sessionStorage.removeItem", "UserSession");
+            AuthState.Logout();
+            NavigationManager.NavigateTo("/login");
+        }
+    }
+}

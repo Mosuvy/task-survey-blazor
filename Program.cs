@@ -5,6 +5,7 @@ using TaskSurvey.Infrastructure.Repositories;
 using TaskSurvey.Infrastructure.Repositories.IRepositories;
 using TaskSurvey.Infrastructure.Services;
 using TaskSurvey.Infrastructure.Services.IServices;
+using TaskSurvey.StateServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,9 @@ builder.Services.AddScoped<IPositionService, PositionService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITemplateService, TemplateService>();
+
+// State Service
+builder.Services.AddScoped<AuthState>();
 
 var app = builder.Build();
 

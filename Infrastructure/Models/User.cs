@@ -15,16 +15,21 @@ namespace TaskSurvey.Infrastructure.Models
         public required string PasswordHash { get; set; }
         [ForeignKey("PositionId")]
         public int PositionId { get; set; }
+        [System.Text.Json.Serialization.JsonIgnore]
         public virtual Position? Position { get; set; }
         public required string PositionName { get; set; }
         [ForeignKey("RoleId")]
         public int RoleId { get; set; }
+        [System.Text.Json.Serialization.JsonIgnore]
         public virtual Role? Role { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
+        [System.Text.Json.Serialization.JsonIgnore]
         public virtual ICollection<UserRelation>? SupervisorRelations { get; set; }
+        [System.Text.Json.Serialization.JsonIgnore]
         public virtual ICollection<UserRelation>? SubordinateRelations { get; set; }
+        [System.Text.Json.Serialization.JsonIgnore]
         public virtual ICollection<DocumentSurvey>? Documents { get; set; }
     }
 }

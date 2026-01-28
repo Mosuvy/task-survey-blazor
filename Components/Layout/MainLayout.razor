@@ -1,23 +1,253 @@
 ﻿@inherits LayoutComponentBase
+@using TaskSurvey.StateServices
+@using TaskSurvey.Infrastructure.Models
+@using System.Text.Json
+@implements IDisposable
+@inject NavigationManager NavigationManager
+@inject AuthState AuthState
+@inject IJSRuntime JS
 
-<div class="page">
-    <div class="sidebar">
+<div class="d-flex vh-100">
+    <!-- Sidebar -->
+    <div class="sidebar border-end shadow-sm" style="width: 280px; background: #f8f9fa;">
         <NavMenu />
     </div>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+    <!-- Main Content -->
+    <div class="flex-fill d-flex flex-column overflow-hidden">
+        <!-- Top Header Bar -->
+        <div class="border-bottom bg-white shadow-sm">
+            <div class="container-fluid">
+                <div class="d-flex align-items-center justify-content-between py-3 px-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn btn-outline-secondary d-lg-none" type="button" 
+                                data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
+                            <i class="bi bi-list fs-4"></i>
+                        </button>
+                        <h5 class="mb-0 text-dark fw-bold">@GetPageTitle()</h5>
+                    </div>
+                    
+                    <!-- User Profile Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-light d-flex align-items-center gap-2 dropdown-toggle" 
+                                type="button" 
+                                id="userDropdown" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                 style="width: 35px; height: 35px;">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            <div class="text-start d-none d-md-block">
+                                <div class="fw-semibold" style="font-size: 0.9rem;">@(AuthState.CurrentUser?.Username ?? "User")</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">@GetRoleName()</div>
+                            </div>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown">
+                            <li>
+                                <div class="dropdown-header">
+                                    <div class="fw-semibold">@(AuthState.CurrentUser?.Username ?? "User")</div>
+                                    <small class="text-muted">@GetRoleName()</small>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="/profile">
+                                    <i class="bi bi-person me-2"></i>Profile
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="/settings">
+                                    <i class="bi bi-gear me-2"></i>Settings
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item text-danger" @onclick="HandleLogout">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Logout
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+        <!-- Page Content -->
+        <main class="flex-fill overflow-auto bg-light">
+            <article class="h-100">
+                @Body
+            </article>
+        </main>
+    </div>
 </div>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
+<!-- Mobile Offcanvas Sidebar -->
+<div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="sidebarMenu" style="width: 280px;">
+    <div class="offcanvas-header border-bottom" style="background: #0ea5e9;">
+        <h5 class="offcanvas-title text-white fw-bold">
+            <i class="bi bi-clipboard-check me-2"></i>TaskSurvey
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+        <NavMenu />
+    </div>
 </div>
+
+<!-- Error UI -->
+<div id="blazor-error-ui" class="alert alert-danger border-0 rounded-0 m-0 position-fixed bottom-0 start-0 end-0 shadow-lg" style="z-index: 9999;">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center justify-content-between py-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>An unhandled error has occurred.</span>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="" class="btn btn-sm btn-light">Reload</a>
+                <button class="btn btn-sm btn-light dismiss">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadAuthStateFromSession();
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        AuthState.OnAuthStateChanged += HandleAuthStateChanged;
+    }
+
+    private async Task LoadAuthStateFromSession()
+    {
+        try
+        {
+            var userJson = await JS.InvokeAsync<string>("sessionStorage.getItem", "UserSession");
+            
+            if (!string.IsNullOrEmpty(userJson))
+            {
+                var user = JsonSerializer.Deserialize<User>(userJson);
+                if (user != null)
+                {
+                    AuthState.SetAuthenticationState(user);
+                    return;
+                }
+            }
+            
+            // Jika tidak ada session, redirect ke login
+            NavigationManager.NavigateTo("/login", true);
+        }
+        catch (Exception)
+        {
+            NavigationManager.NavigateTo("/login", true);
+        }
+    }
+
+    private void HandleAuthStateChanged()
+    {
+        InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
+    }
+
+    private string GetPageTitle()
+    {
+        var path = NavigationManager.Uri.Split('/').Last();
+        return path switch
+        {
+            "dashboard" => "Dashboard",
+            "users" => "User Management",
+            "templates" => "Template Management",
+            "surveys" => "Survey Management",
+            "form" => GetFormTitle(),
+            _ => "TaskSurvey"
+        };
+    }
+
+    private string GetFormTitle()
+    {
+        var uri = NavigationManager.Uri;
+        if (uri.Contains("/users/form")) return "User Form";
+        if (uri.Contains("/templates/form")) return "Template Form";
+        return "Form";
+    }
+
+    private string GetRoleName()
+    {
+        if (AuthState.CurrentUser == null) return "Unknown";
+        return AuthState.CurrentUser.RoleId switch
+        {
+            1 => "Supervisor",
+            2 => "User",
+            _ => "Unknown"
+        };
+    }
+
+    private async Task HandleLogout()
+    {
+        AuthState.Logout();
+        await JS.InvokeVoidAsync("sessionStorage.removeItem", "UserSession");
+        NavigationManager.NavigateTo("/login", true);
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnAuthStateChanged -= HandleAuthStateChanged;
+    }
+}
+
+<style>
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    #blazor-error-ui {
+        display: none;
+    }
+
+    #blazor-error-ui.show {
+        display: block;
+    }
+
+    .dropdown-toggle::after {
+        margin-left: 0.5rem;
+    }
+
+    .dropdown-item {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .dropdown-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .dropdown-item.text-danger:hover {
+        background-color: #fee;
+    }
+</style>
