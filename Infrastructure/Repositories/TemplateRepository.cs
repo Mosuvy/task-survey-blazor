@@ -116,6 +116,8 @@ namespace TaskSurvey.Infrastructure.Repositories
                         if (ed != null) { ed.Item = rd.Item; }
                         else {
                             rd.Id = 0;
+                            rd.UpdatedAt = DateTime.Now;
+                            rd.CreatedAt = DateTime.Now;
                             existingItem.ItemDetails!.Add(rd);
                         }
                     }
@@ -124,7 +126,12 @@ namespace TaskSurvey.Infrastructure.Repositories
                 {
                     ri.Id = 0; 
                     if(ri.ItemDetails != null) {
-                        foreach(var d in ri.ItemDetails) d.Id = 0;
+                        foreach(var d in ri.ItemDetails)
+                        {
+                            d.Id = 0;
+                            d.UpdatedAt = DateTime.Now;
+                            d.CreatedAt = DateTime.Now;   
+                        }
                     }
                     dbHeader.Items!.Add(ri);
                 }

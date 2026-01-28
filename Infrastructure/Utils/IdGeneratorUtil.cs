@@ -60,9 +60,9 @@ namespace TaskSurvey.Infrastructure.Utils
             string prefix = $"SURVEY/{datePart}/";
 
             var lastId = await context.DocumentSurveys
-                .Where(d => d.DocumentId.StartsWith(prefix))
-                .OrderByDescending(d => d.DocumentId)
-                .Select(d => d.DocumentId)
+                .Where(d => d.Id.StartsWith(prefix))
+                .OrderByDescending(d => d.Id)
+                .Select(d => d.Id)
                 .FirstOrDefaultAsync();
 
             int nextNumber = 1;

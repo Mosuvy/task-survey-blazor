@@ -1,7 +1,8 @@
-@page "/users"
+@page "/templates"
+@using TaskSurvey.Infrastructure.DTOs.TemplateDTOs
 @layout MainLayout
 @rendermode InteractiveServer
-@inject IUserService UserService
+@inject ITemplateService TemplateService
 @inject IPositionService PositionService
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
@@ -12,12 +13,12 @@
         <div class="col">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h3 class="fw-bold text-dark mb-1">User Management</h3>
-                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Manage and organize system users</p>
+                    <h3 class="fw-bold text-dark mb-1">Template Management</h3>
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Manage and organize survey templates</p>
                 </div>
-                <button class="btn text-white shadow-sm px-4" @onclick='() => NavigationManager.NavigateTo("/users/form")'
+                <button class="btn text-white shadow-sm px-4" @onclick='() => NavigationManager.NavigateTo("/templates/form")'
                         style="background: #0ea5e9; border: none;">
-                    <i class="bi bi-plus-circle me-2"></i>Add User
+                    <i class="bi bi-plus-circle me-2"></i>Add Template
                 </button>
             </div>
         </div>
@@ -27,23 +28,13 @@
     <div class="card border-0 shadow-sm rounded-3 mb-3">
         <div class="card-body p-3">
             <div class="row g-3">
-                <div class="col-md-5">
+                <div class="col-md-8">
                     <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.85rem;">
-                        <i class="bi bi-search me-1" style="color: #0ea5e9;"></i>Search User
+                        <i class="bi bi-search me-1" style="color: #0ea5e9;"></i>Search Template
                     </label>
                     <input type="text" class="form-control" placeholder="Search by name or ID..." 
                            @bind="searchQuery" @bind:event="oninput" @onkeyup="ApplyFilters" 
                            style="font-size: 0.95rem;" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.85rem;">
-                        <i class="bi bi-funnel me-1" style="color: #0ea5e9;"></i>Role
-                    </label>
-                    <select class="form-select" @onchange="OnRoleFilterChanged" style="font-size: 0.95rem;">
-                        <option value="0">All Roles</option>
-                        <option value="1">Supervisor</option>
-                        <option value="2">User</option>
-                    </select>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.85rem;">
@@ -63,46 +54,31 @@
 
     <!-- Stats Cards -->
     <div class="row g-3 mb-3">
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div class="card border-0 shadow-sm rounded-3 h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center">
                         <div class="text-white p-2 rounded me-3" style="background: #0ea5e9;">
-                            <i class="bi bi-people-fill fs-4"></i>
+                            <i class="bi bi-file-earmark-text-fill fs-4"></i>
                         </div>
                         <div>
-                            <p class="text-muted mb-0" style="font-size: 0.85rem;">Total Users</p>
-                            <h4 class="fw-bold mb-0">@users.Count</h4>
+                            <p class="text-muted mb-0" style="font-size: 0.85rem;">Total Templates</p>
+                            <h4 class="fw-bold mb-0">@templates.Count</h4>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div class="card border-0 shadow-sm rounded-3 h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center">
                         <div class="text-white p-2 rounded me-3" style="background: #10b981;">
-                            <i class="bi bi-person-badge-fill fs-4"></i>
+                            <i class="bi bi-diagram-3-fill fs-4"></i>
                         </div>
                         <div>
-                            <p class="text-muted mb-0" style="font-size: 0.85rem;">Supervisors</p>
-                            <h4 class="fw-bold mb-0">@users.Count(u => u.RoleId == 1)</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-3 h-100">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center">
-                        <div class="text-white p-2 rounded me-3" style="background: #64748b;">
-                            <i class="bi bi-person-fill fs-4"></i>
-                        </div>
-                        <div>
-                            <p class="text-muted mb-0" style="font-size: 0.85rem;">Regular Users</p>
-                            <h4 class="fw-bold mb-0">@users.Count(u => u.RoleId == 2)</h4>
+                            <p class="text-muted mb-0" style="font-size: 0.85rem;">Active Positions</p>
+                            <h4 class="fw-bold mb-0">@templates.Select(t => t.PositionId).Distinct().Count()</h4>
                         </div>
                     </div>
                 </div>
@@ -110,15 +86,15 @@
         </div>
     </div>
 
-    <!-- Users Table -->
+    <!-- Templates Table -->
     <div class="card border-0 shadow-sm rounded-3">
         <div class="card-header bg-white py-3 px-3 border-bottom">
             <div class="d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-table me-2" style="color: #0ea5e9;"></i>User List
+                    <i class="bi bi-table me-2" style="color: #0ea5e9;"></i>Template List
                 </h6>
                 <span class="badge rounded-pill" style="background: #0ea5e9; font-size: 0.85rem;">
-                    @filteredUsers.Count Results
+                    @filteredTemplates.Count Results
                 </span>
             </div>
         </div>
@@ -128,55 +104,47 @@
                     <thead style="background: #f8f9fa;">
                         <tr>
                             <th class="py-3 px-3 fw-semibold text-dark">ID</th>
-                            <th class="py-3 px-3 fw-semibold text-dark">Username</th>
+                            <th class="py-3 px-3 fw-semibold text-dark">Template Name</th>
                             <th class="py-3 px-3 fw-semibold text-dark">Position Level</th>
-                            <th class="py-3 px-3 fw-semibold text-dark">Position Name</th>
-                            <th class="py-3 px-3 fw-semibold text-dark">Role</th>
-                            <th class="py-3 px-3 fw-semibold text-dark">Supervisor</th>
+                            <th class="py-3 px-3 fw-semibold text-dark">Theme</th>
                             <th class="py-3 px-3 fw-semibold text-dark text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @if (filteredUsers.Count == 0)
+                        @if (filteredTemplates.Count == 0)
                         {
                             <tr>
-                                <td colspan="7" class="text-center py-5 text-muted">
+                                <td colspan="5" class="text-center py-5 text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                    <p class="mb-0">No users found</p>
+                                    <p class="mb-0">No templates found</p>
                                 </td>
                             </tr>
                         }
                         else
                         {
-                            @foreach (var user in filteredUsers)
+                            @foreach (var template in filteredTemplates)
                             {
                                 <tr>
                                     <td class="px-3 py-3">
-                                        <span class="fw-semibold" style="color: #0ea5e9;">@user.Id</span>
+                                        <span class="fw-semibold" style="color: #0ea5e9;">@template.Id</span>
                                     </td>
                                     <td class="px-3 py-3">
                                         <div class="d-flex align-items-center">
                                             <div class="bg-light rounded-circle p-2 me-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
-                                                <i class="bi bi-person-fill" style="color: #0ea5e9;"></i>
+                                                <i class="bi bi-file-earmark-text-fill" style="color: #0ea5e9;"></i>
                                             </div>
-                                            <span class="fw-semibold">@user.Username</span>
+                                            <span class="fw-semibold">@template.TemplateName</span>
                                         </div>
                                     </td>
                                     <td class="px-3 py-3">
                                         <span class="badge rounded-pill" style="background: #0ea5e9;">
-                                            @user.Position?.PositionLevel
-                                        </span>
-                                    </td>
-                                    <td class="px-3 py-3">@user.PositionName</td>
-                                    <td class="px-3 py-3">
-                                        <span class="badge rounded-pill" style="background: @(user.RoleId == 1 ? "#10b981" : "#64748b");">
-                                            @user.Role?.RoleName
+                                            @(positions.FirstOrDefault(p => p.Id == template.PositionId)?.PositionLevel ?? "-")
                                         </span>
                                     </td>
                                     <td class="px-3 py-3">
-                                        @if (user.Supervisor != null)
+                                        @if (!string.IsNullOrEmpty(template.Theme))
                                         {
-                                            <span class="text-muted small">@user.Supervisor.Username</span>
+                                            <span class="text-muted small">@template.Theme</span>
                                         }
                                         else
                                         {
@@ -184,7 +152,7 @@
                                         }
                                     </td>
                                     <td class="px-3 py-3 text-center">
-                                        <button class="btn btn-sm text-white px-3" @onclick="() => EditUser(user.Id)"
+                                        <button class="btn btn-sm text-white px-3" @onclick="() => EditTemplate(template.Id)"
                                                 style="background: #0ea5e9; border: none;">
                                             <i class="bi bi-pencil-square me-1"></i>Edit
                                         </button>
@@ -200,12 +168,11 @@
 </div>
 
 @code {
-    private List<UserResponseDTO> users = new();
-    private List<UserResponseDTO> filteredUsers = new();
+    private List<TemplateHeaderResponseDTO> templates = new();
+    private List<TemplateHeaderResponseDTO> filteredTemplates = new();
     private List<PositionResponseDTO> positions = new();
     
     private string searchQuery = "";
-    private int selectedRoleId = 0;
     private int selectedPosId = 0;
 
     protected override async Task OnInitializedAsync()
@@ -216,13 +183,7 @@
 
     private async Task LoadData()
     {
-        users = await UserService.GetUsers();
-        ApplyFilters();
-    }
-
-    private void OnRoleFilterChanged(ChangeEventArgs e)
-    {
-        selectedRoleId = int.Parse(e.Value?.ToString() ?? "0");
+        templates = await TemplateService.GetTemplateHeaders();
         ApplyFilters();
     }
 
@@ -234,19 +195,18 @@
 
     private void ApplyFilters()
     {
-        var result = users.AsQueryable();
+        var result = templates.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             var q = searchQuery.ToLower();
-            result = result.Where(u => u.Username.ToLower().Contains(q) || u.Id.Contains(q));
+            result = result.Where(t => t.TemplateName.ToLower().Contains(q) || t.Id.Contains(q));
         }
 
-        if (selectedRoleId != 0) result = result.Where(u => u.RoleId == selectedRoleId);
-        if (selectedPosId != 0) result = result.Where(u => u.PositionId == selectedPosId);
+        if (selectedPosId != 0) result = result.Where(t => t.PositionId == selectedPosId);
 
-        filteredUsers = result.ToList();
+        filteredTemplates = result.ToList();
     }
 
-    private void EditUser(string id) => NavigationManager.NavigateTo($"/users/form?userId={id}");
+    private void EditTemplate(string id) => NavigationManager.NavigateTo($"/templates/form?templateId={id}");
 }

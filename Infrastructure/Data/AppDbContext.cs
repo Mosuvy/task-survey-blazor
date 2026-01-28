@@ -192,7 +192,7 @@ namespace TaskSurvey.Infrastructure.Data
                 new UserRelation
                 {
                     Id = 1,
-                    UserId = "00000002",
+                    UserId = "00000003",
                     SupervisorId = "00000001",
                     CreatedAt = DateTime.Now
                 }
@@ -255,8 +255,8 @@ namespace TaskSurvey.Infrastructure.Data
             modelBuilder.Entity<DocumentSurvey>().HasData(
                 new DocumentSurvey
                 {
-                    DocumentId = "SURVEY/2601/0001",
-                    RequesterId = "00000002",
+                    Id = "SURVEY/2601/0001",
+                    RequesterId = "00000003",
                     Status = StatusType.Draft,
                     TemplateHeaderId = "TEMPLATE/2601/001",
                     CreatedAt = DateTime.Now,

@@ -121,7 +121,7 @@ namespace TaskSurvey.Infrastructure.Migrations
                 name: "DocumentSurveys",
                 columns: table => new
                 {
-                    DocumentId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     RequesterId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     TemplateHeaderId = table.Column<string>(type: "nvarchar(450)", nullable: true),
@@ -130,7 +130,7 @@ namespace TaskSurvey.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DocumentSurveys", x => x.DocumentId);
+                    table.PrimaryKey("PK_DocumentSurveys", x => x.Id);
                     table.ForeignKey(
                         name: "FK_DocumentSurveys_TemplateHeaders_TemplateHeaderId",
                         column: x => x.TemplateHeaderId,
@@ -216,7 +216,7 @@ namespace TaskSurvey.Infrastructure.Migrations
                         name: "FK_DocumentSurveyItems_DocumentSurveys_DocumentSurveyId",
                         column: x => x.DocumentSurveyId,
                         principalTable: "DocumentSurveys",
-                        principalColumn: "DocumentId",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_DocumentSurveyItems_TemplateItems_TemplateItemId",
@@ -261,10 +261,10 @@ namespace TaskSurvey.Infrastructure.Migrations
                 columns: new[] { "Id", "CreatedAt", "PositionLevel" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(2026, 1, 28, 10, 6, 17, 303, DateTimeKind.Local).AddTicks(7701), "Officer" },
-                    { 2, new DateTime(2026, 1, 28, 10, 6, 17, 303, DateTimeKind.Local).AddTicks(7705), "Section Head" },
-                    { 3, new DateTime(2026, 1, 28, 10, 6, 17, 303, DateTimeKind.Local).AddTicks(7707), "Departement Head" },
-                    { 4, new DateTime(2026, 1, 28, 10, 6, 17, 303, DateTimeKind.Local).AddTicks(7710), "Director" }
+                    { 1, new DateTime(2026, 1, 28, 13, 47, 6, 407, DateTimeKind.Local).AddTicks(4066), "Officer" },
+                    { 2, new DateTime(2026, 1, 28, 13, 47, 6, 407, DateTimeKind.Local).AddTicks(4069), "Section Head" },
+                    { 3, new DateTime(2026, 1, 28, 13, 47, 6, 407, DateTimeKind.Local).AddTicks(4071), "Departement Head" },
+                    { 4, new DateTime(2026, 1, 28, 13, 47, 6, 407, DateTimeKind.Local).AddTicks(4073), "Director" }
                 });
 
             migrationBuilder.InsertData(
@@ -272,51 +272,51 @@ namespace TaskSurvey.Infrastructure.Migrations
                 columns: new[] { "Id", "CreatedAt", "RoleName" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(2026, 1, 28, 10, 6, 17, 303, DateTimeKind.Local).AddTicks(7369), "Supervisor" },
-                    { 2, new DateTime(2026, 1, 28, 10, 6, 17, 303, DateTimeKind.Local).AddTicks(7407), "User" }
+                    { 1, new DateTime(2026, 1, 28, 13, 47, 6, 407, DateTimeKind.Local).AddTicks(3816), "Supervisor" },
+                    { 2, new DateTime(2026, 1, 28, 13, 47, 6, 407, DateTimeKind.Local).AddTicks(3848), "User" }
                 });
 
             migrationBuilder.InsertData(
                 table: "TemplateHeaders",
                 columns: new[] { "Id", "CreatedAt", "PositionId", "TemplateName", "Theme", "UpdatedAt" },
-                values: new object[] { "TEMPLATE/2601/001", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3225), 3, "Survey Kepuasan Kerja", "Blue Corporate", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3227) });
+                values: new object[] { "TEMPLATE/2601/001", new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7206), 3, "Survey Kepuasan Kerja", "Blue Corporate", new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7207) });
 
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "Id", "CreatedAt", "PasswordHash", "PositionId", "PositionName", "RoleId", "UpdatedAt", "Username" },
                 values: new object[,]
                 {
-                    { "00000001", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3005), "AQAAAAIAAYagAAAAEJb00evieNA/a3/9QCMXVQ5wg0gXZqIUuJx7087lO8VxXP8JC4pfR/mnjXrpjBd/nw==", 3, "Departement Leader", 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3046), "Wahyu Johan" },
-                    { "00000002", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3054), "AQAAAAIAAYagAAAAEJb00evieNA/a3/9QCMXVQ5wg0gXZqIUuJx7087lO8VxXP8JC4pfR/mnjXrpjBd/nw==", 3, "Departement Leader", 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3055), "Edi" },
-                    { "00000003", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3058), "AQAAAAIAAYagAAAAEJb00evieNA/a3/9QCMXVQ5wg0gXZqIUuJx7087lO8VxXP8JC4pfR/mnjXrpjBd/nw==", 1, "IT Staff", 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3060), "Andhika" }
+                    { "00000001", new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7007), "AQAAAAIAAYagAAAAENQEdLyNGvmnITiSKHafXSXw6rIK7YjRbAq+mOOrSeu69fnWO5cApWKa/0q6Uh5D7A==", 3, "Departement Leader", 1, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7046), "Wahyu Johan" },
+                    { "00000002", new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7052), "AQAAAAIAAYagAAAAENQEdLyNGvmnITiSKHafXSXw6rIK7YjRbAq+mOOrSeu69fnWO5cApWKa/0q6Uh5D7A==", 3, "Departement Leader", 1, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7053), "Edi" },
+                    { "00000003", new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7055), "AQAAAAIAAYagAAAAENQEdLyNGvmnITiSKHafXSXw6rIK7YjRbAq+mOOrSeu69fnWO5cApWKa/0q6Uh5D7A==", 1, "IT Staff", 2, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7057), "Andhika" }
                 });
 
             migrationBuilder.InsertData(
                 table: "DocumentSurveys",
-                columns: new[] { "DocumentId", "CreatedAt", "RequesterId", "Status", "TemplateHeaderId", "UpdatedAt" },
-                values: new object[] { "SURVEY/2601/0001", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3498), "00000002", 0, "TEMPLATE/2601/001", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3500) });
+                columns: new[] { "Id", "CreatedAt", "RequesterId", "Status", "TemplateHeaderId", "UpdatedAt" },
+                values: new object[] { "SURVEY/2601/0001", new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7320), "00000003", 0, "TEMPLATE/2601/001", new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7321) });
 
             migrationBuilder.InsertData(
                 table: "TemplateItems",
                 columns: new[] { "Id", "CreatedAt", "OrderNo", "Question", "TemplateHeaderId", "Type", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3404), 1, "Apa pendapat Anda tentang lingkungan kerja?", "TEMPLATE/2601/001", 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3406) },
-                    { 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3409), 2, "Fasilitas yang Anda gunakan:", "TEMPLATE/2601/001", 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3411) }
+                    { 1, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7245), 1, "Apa pendapat Anda tentang lingkungan kerja?", "TEMPLATE/2601/001", 2, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7246) },
+                    { 2, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7249), 2, "Fasilitas yang Anda gunakan:", "TEMPLATE/2601/001", 1, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7250) }
                 });
 
             migrationBuilder.InsertData(
                 table: "UserRelations",
                 columns: new[] { "Id", "CreatedAt", "SupervisorId", "UserId" },
-                values: new object[] { 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3188), "00000001", "00000002" });
+                values: new object[] { 1, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7173), "00000001", "00000003" });
 
             migrationBuilder.InsertData(
                 table: "DocumentSurveyItems",
                 columns: new[] { "Id", "Answer", "CreatedAt", "DocumentSurveyId", "OrderNo", "Question", "TemplateItemId", "Type", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { 1, "Lingkungan kerja sangat kondusif dan mendukung produktivitas.", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3539), "SURVEY/2601/0001", 1, "Apa pendapat Anda tentang lingkungan kerja?", 1, 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3541) },
-                    { 2, "Selected", new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3545), "SURVEY/2601/0001", 2, "Fasilitas yang Anda gunakan:", 2, 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3546) }
+                    { 1, "Lingkungan kerja sangat kondusif dan mendukung produktivitas.", new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7351), "SURVEY/2601/0001", 1, "Apa pendapat Anda tentang lingkungan kerja?", 1, 2, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7353) },
+                    { 2, "Selected", new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7357), "SURVEY/2601/0001", 2, "Fasilitas yang Anda gunakan:", 2, 1, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7358) }
                 });
 
             migrationBuilder.InsertData(
@@ -324,8 +324,8 @@ namespace TaskSurvey.Infrastructure.Migrations
                 columns: new[] { "Id", "CreatedAt", "Item", "TemplateItemId", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3449), "Laptop Inventaris", 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3451) },
-                    { 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3453), "Ruang Meeting", 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3455) }
+                    { 1, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7276), "Laptop Inventaris", 2, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7278) },
+                    { 2, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7280), "Ruang Meeting", 2, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7282) }
                 });
 
             migrationBuilder.InsertData(
@@ -333,8 +333,8 @@ namespace TaskSurvey.Infrastructure.Migrations
                 columns: new[] { "Id", "CreatedAt", "DocumentItemId", "IsChecked", "Item", "TemplateItemDetailId", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3577), 2, true, "Laptop Inventaris", 1, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3579) },
-                    { 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3582), 2, true, "Ruang Meeting", 2, new DateTime(2026, 1, 28, 10, 6, 17, 389, DateTimeKind.Local).AddTicks(3584) }
+                    { 1, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7390), 2, true, "Laptop Inventaris", 1, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7391) },
+                    { 2, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7394), 2, true, "Ruang Meeting", 2, new DateTime(2026, 1, 28, 13, 47, 6, 472, DateTimeKind.Local).AddTicks(7395) }
                 });
 
             migrationBuilder.CreateIndex(
