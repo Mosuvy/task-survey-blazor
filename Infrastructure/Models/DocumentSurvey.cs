@@ -20,6 +20,7 @@ namespace TaskSurvey.Infrastructure.Models
         public virtual TemplateHeader? Header { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public DateTime UpdatedAtTemplate { get; set; }
 
         public virtual ICollection<DocumentSurveyItem>? SurveyItems { get; set; }
     }
@@ -29,5 +30,6 @@ namespace TaskSurvey.Infrastructure.Models
         Draft = 0,
         ConfirmToApprove = 1,
         Confirmed = 2,
+        Rejected = 3
     }
 }

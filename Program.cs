@@ -5,6 +5,7 @@ using TaskSurvey.Infrastructure.Repositories;
 using TaskSurvey.Infrastructure.Repositories.IRepositories;
 using TaskSurvey.Infrastructure.Services;
 using TaskSurvey.Infrastructure.Services.IServices;
+using TaskSurvey.Infrastructure.Utils;
 using TaskSurvey.StateServices;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +29,7 @@ builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();
 builder.Services.AddScoped<ITemplateRepository, TemplateRepository>();
+builder.Services.AddScoped<ISurveyRepository, SurveyRepository>();
 
 // Add Service
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -35,6 +37,10 @@ builder.Services.AddScoped<IPositionService, PositionService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITemplateService, TemplateService>();
+builder.Services.AddScoped<ISurveyService, SurveyService>();
+
+// Utils
+builder.Services.AddScoped<IdGeneratorUtil>();
 
 // State Service
 builder.Services.AddScoped<AuthState>();

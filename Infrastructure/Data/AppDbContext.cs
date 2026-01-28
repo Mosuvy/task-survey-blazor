@@ -197,6 +197,7 @@ namespace TaskSurvey.Infrastructure.Data
                     CreatedAt = DateTime.Now
                 }
             );
+            var templateTime = DateTime.Now;
 
             modelBuilder.Entity<TemplateHeader>().HasData(
                 new TemplateHeader
@@ -206,7 +207,7 @@ namespace TaskSurvey.Infrastructure.Data
                     PositionId = 3,
                     Theme = "Blue Corporate",
                     CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
+                    UpdatedAt = templateTime
                 }
             );
 
@@ -260,7 +261,8 @@ namespace TaskSurvey.Infrastructure.Data
                     Status = StatusType.Draft,
                     TemplateHeaderId = "TEMPLATE/2601/001",
                     CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
+                    UpdatedAt = DateTime.Now,
+                    UpdatedAtTemplate = templateTime
                 }
             );
 

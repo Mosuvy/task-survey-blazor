@@ -21,6 +21,7 @@ namespace TaskSurvey.Infrastructure.DTOs.SurveyDTOs
         public virtual TemplateHeaderResponseDTO? Header { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public DateTime UpdatedAtTemplate { get; set; }
 
         public List<SurveyItemResponseDTO> SurveyItems { get; set; } = new();
     }

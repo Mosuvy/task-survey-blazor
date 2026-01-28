@@ -21,6 +21,7 @@ namespace TaskSurvey.Infrastructure.Mappers
                 TemplateHeaderId = entity.TemplateHeaderId,
                 CreatedAt = entity.CreatedAt,
                 UpdatedAt = entity.UpdatedAt,
+                UpdatedAtTemplate = entity.UpdatedAtTemplate,
                 
                 Requester = entity.Requester != null ? new UserResponseDTO 
                 { 
@@ -75,6 +76,7 @@ namespace TaskSurvey.Infrastructure.Mappers
                 Status = dto.Status,
                 TemplateHeaderId = dto.TemplateHeaderId,
                 UpdatedAt = DateTime.Now,
+                UpdatedAtTemplate = dto.UpdatedAtTemplate,
                 
                 SurveyItems = dto.SurveyItems.Select(i => new DocumentSurveyItem
                 {

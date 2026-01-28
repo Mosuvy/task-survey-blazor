@@ -1,0 +1,430 @@
+@page "/surveys/form"
+@using Microsoft.AspNetCore.WebUtilities
+@layout MainLayout
+@rendermode InteractiveServer
+@inject ISurveyService SurveyService
+@inject ITemplateService TemplateService
+@inject NavigationManager NavigationManager
+@inject TaskSurvey.StateServices.AuthState AuthState
+@inject TaskSurvey.Infrastructure.Data.AppDbContext DbContext
+@inject TaskSurvey.Infrastructure.Utils.IdGeneratorUtil IdGenerator
+@inject IJSRuntime JS
+@using TaskSurvey.Infrastructure.DTOs.SurveyDTOs
+@using TaskSurvey.Infrastructure.DTOs.TemplateDTOs
+@using TaskSurvey.Infrastructure.Models
+@using TaskSurvey.Infrastructure.Utils
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-11">
+            <!-- Header -->
+            <div class="mb-3">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="text-white p-2 rounded" style="background: #0ea5e9;">
+                        <i class="bi bi-clipboard-check fs-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 fw-bold text-dark">@(isEditMode ? "Edit Survey" : "Create New Survey")</h4>
+                        <p class="text-muted mb-0" style="font-size: 0.85rem;">@(isEditMode ? $"Modify survey document: {reqDto.DocumentId}" : "Fill out survey form")</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Template Update Warning -->
+            @if (showTemplateUpdateWarning)
+            {
+                <div class="alert alert-warning border-0 shadow-sm mb-3 d-flex align-items-center" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                    <div>
+                        <strong>Template Updated!</strong> The template has been updated since this survey was created. Please review the changes.
+                    </div>
+                </div>
+            }
+
+            <!-- Document Info Cards -->
+            <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div class="card-body p-3">
+                            <p class="text-muted mb-1" style="font-size: 0.75rem;">DOCUMENT NO.</p>
+                            <h6 class="fw-bold mb-0" style="color: #0ea5e9;">@(reqDto.DocumentId ?? "GENERATING...")</h6>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div class="card-body p-3">
+                            <p class="text-muted mb-1" style="font-size: 0.75rem;">DOCUMENT DATE</p>
+                            <h6 class="fw-bold mb-0">@DateTime.Now.ToString("dd MMM yyyy")</h6>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div class="card-body p-3">
+                            <p class="text-muted mb-1" style="font-size: 0.75rem;">STATUS</p>
+                            <span class="badge rounded-pill @GetStatusBadgeClass(reqDto.Status.ToString())">
+                                @GetStatusDisplay(reqDto.Status.ToString())
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div class="card-body p-3">
+                            <p class="text-muted mb-1" style="font-size: 0.75rem;">CREATED BY</p>
+                            <h6 class="fw-bold mb-0">@(AuthState.CurrentUser != null ? AuthState.CurrentUser.Username : "N/A")</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Requester Information -->
+            <div class="card border-0 shadow-sm rounded-3 mb-3">
+                <div class="card-header text-white py-2 px-3" style="background: #0ea5e9;">
+                    <h6 class="mb-0 fw-semibold">
+                        <i class="bi bi-person-badge me-2"></i>Requester Information
+                    </h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Employee ID</label>
+                            <input type="text" class="form-control bg-light" value="@(AuthState.CurrentUser != null ? AuthState.CurrentUser.Id : "")" readonly style="font-size: 0.95rem;" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Employee Name</label>
+                            <input type="text" class="form-control bg-light" value="@(AuthState.CurrentUser != null ? AuthState.CurrentUser.Username : "")" readonly style="font-size: 0.95rem;" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Position</label>
+                            <input type="text" class="form-control bg-light" value="@(AuthState.CurrentUser != null ? AuthState.CurrentUser.PositionName : "")" readonly style="font-size: 0.95rem;" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Survey Template Selection -->
+            <div class="card border-0 shadow-sm rounded-3 mb-3">
+                <div class="card-header text-white py-2 px-3" style="background: #64748b;">
+                    <h6 class="mb-0 fw-semibold">
+                        <i class="bi bi-file-earmark-text me-2"></i>Survey Template
+                    </h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Template ID</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="bi bi-fingerprint" style="color: #0ea5e9;"></i>
+                                </span>
+                                <input type="text" class="form-control bg-light border-start-0" 
+                                       value="@reqDto.TemplateHeaderId" readonly style="font-size: 0.95rem;" />
+                                <button class="btn text-white px-3" type="button" @onclick="() => showTemplateModal = true"
+                                        style="background: #0ea5e9; border: none;">
+                                    <i class="bi bi-search me-1"></i>Select
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Template Name</label>
+                            <input type="text" class="form-control bg-light" value="@selectedTemplateName" readonly style="font-size: 0.95rem;" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Survey Items -->
+            <div class="card border-0 shadow-sm rounded-3 mb-3">
+                <div class="card-header text-white py-2 px-3" style="background: #64748b;">
+                    <h6 class="mb-0 fw-semibold">
+                        <i class="bi bi-list-check me-2"></i>Survey Pengajuan
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    @if (reqDto.SurveyItems.Count == 0)
+                    {
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            <p class="mb-0">Please select a template first</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var item in reqDto.SurveyItems.OrderBy(x => x.OrderNo))
+                        {
+                            <div class="card border-0 shadow-sm mb-3 p-3 rounded-3" style="background: #f8f9fa;">
+                                <p class="fw-bold mb-3" style="font-size: 1rem;">
+                                    @item.OrderNo. @item.Question
+                                </p>
+                                
+                                @if (item.Type == QuestionType.TextBox)
+                                {
+                                    <textarea class="form-control" rows="3" @bind="item.Answer" 
+                                              placeholder="Type your answer here..." style="font-size: 0.95rem;"></textarea>
+                                }
+                                else if (item.Type == QuestionType.CheckBox)
+                                {
+                                    <div class="row g-2">
+                                        @foreach (var detail in item.CheckBox)
+                                        {
+                                            <div class="col-md-6">
+                                                <div class="form-check p-3 border rounded-3 bg-white">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           @bind="detail.IsChecked" id="det-@detail.Id">
+                                                    <label class="form-check-label fw-semibold ms-2" for="det-@detail.Id">
+                                                        @detail.Item
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex gap-2 flex-wrap mb-5">
+                <button class="btn text-white px-4 shadow-sm" @onclick="HandleSubmit"
+                        style="background: #10b981; border: none;">
+                    <i class="bi bi-check-circle me-2"></i>Submit
+                </button>
+                <button class="btn text-white px-4 shadow-sm" @onclick="HandleSaveDraft"
+                        style="background: #f59e0b; border: none;">
+                    <i class="bi bi-save me-2"></i>Save Draft
+                </button>
+                @if (isEditMode)
+                {
+                    <button class="btn text-white px-3 shadow-sm" @onclick="HandleDelete"
+                            style="background: #ef4444; border: none;">
+                        <i class="bi bi-trash me-2"></i>Delete
+                    </button>
+                }
+                <button class="btn btn-outline-secondary px-3 ms-auto" @onclick='() => NavigationManager.NavigateTo("/surveys")'>
+                    <i class="bi bi-x-circle me-2"></i>Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Selection Modal -->
+@if (showTemplateModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-3">
+                <div class="modal-header text-white py-2 px-3" style="background: #64748b;">
+                    <h6 class="modal-title fw-semibold mb-0">
+                        <i class="bi bi-search me-2"></i>Select Template
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => showTemplateModal = false"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text bg-light">
+                            <i class="bi bi-funnel" style="color: #0ea5e9;"></i>
+                        </span>
+                        <input type="text" class="form-control" placeholder="Search template name..." 
+                               @bind="searchQuery" @bind:event="oninput" style="font-size: 0.95rem;" />
+                    </div>
+                    <div class="table-responsive" style="max-height: 400px;">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="fw-semibold ps-3">ID</th>
+                                    <th class="fw-semibold">Template Name</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in allTemplates.Where(x => x.TemplateName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    <tr style="cursor: pointer;" @onclick="() => SelectTemplate(t)">
+                                        <td class="ps-3 fw-semibold" style="color: #0ea5e9;">@t.Id</td>
+                                        <td>@t.TemplateName</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private SurveyHeaderRequestDTO reqDto = new() { SurveyItems = new(), Status = StatusType.Draft };
+    private List<TemplateHeaderResponseDTO> allTemplates = new();
+    
+    private string? currentSurveyId;
+    private string selectedTemplateName = "";
+    private string searchQuery = "";
+    private bool isEditMode = false;
+    private bool showTemplateModal = false;
+    private bool showTemplateUpdateWarning = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        allTemplates = await TemplateService.GetTemplateHeaders();
+        
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("surveyId", out var id))
+        {
+            await LoadExistingSurvey(id!);
+        }
+        else
+        {
+            await GenerateDocumentId();
+            reqDto.RequesterId = AuthState.CurrentUser?.Id!;
+        }
+    }
+
+    private async Task GenerateDocumentId()
+    {
+        reqDto.DocumentId = await IdGeneratorUtil.GenerateSurveyId(DbContext);
+    }
+
+    private async Task LoadExistingSurvey(string id)
+    {
+        isEditMode = true;
+        currentSurveyId = id;
+        var data = await SurveyService.GetSurveyHeaderById(id);
+        if (data != null)
+        {
+            reqDto = new SurveyHeaderRequestDTO
+            {
+                DocumentId = data.DocumentId,
+                RequesterId = data.RequesterId,
+                Status = Enum.Parse<StatusType>(data.Status),
+                TemplateHeaderId = data.TemplateHeaderId,
+                UpdatedAtTemplate = data.UpdatedAtTemplate,
+                SurveyItems = data.SurveyItems.Select(si => new SurveyItemRequestDTO
+                {
+                    Id = si.Id,
+                    DocumentSurveyId = si.DocumentSurveyId,
+                    TemplateItemId = si.TemplateItemId,
+                    Question = si.Question,
+                    Type = Enum.Parse<QuestionType>(si.Type),
+                    OrderNo = si.OrderNo,
+                    Answer = si.Answer,
+                    CheckBox = si.CheckBox.Select(cb => new SurveyItemDetailRequestDTO
+                    {
+                        Id = cb.Id,
+                        DocumentItemId = cb.DocumentItemId,
+                        TemplateItemDetailId = cb.TemplateItemDetailId,
+                        Item = cb.Item,
+                        IsChecked = cb.IsChecked
+                    }).ToList()
+                }).ToList()
+            };
+            
+            selectedTemplateName = data.Header != null ? data.Header.TemplateName : "N/A";
+            
+            // Check if template was updated
+            if (data.Header != null && data.UpdatedAtTemplate != data.Header.UpdatedAt)
+            {
+                showTemplateUpdateWarning = true;
+            }
+        }
+    }
+
+    private async Task SelectTemplate(TemplateHeaderResponseDTO template)
+    {
+        var fullTemplate = await TemplateService.GetTemplateByHeaderId(template.Id);
+        if (fullTemplate != null)
+        {
+            reqDto.TemplateHeaderId = fullTemplate.Id;
+            reqDto.UpdatedAtTemplate = fullTemplate.UpdatedAt;
+            selectedTemplateName = fullTemplate.TemplateName;
+            
+            reqDto.SurveyItems = fullTemplate.Items.Select(i => new SurveyItemRequestDTO
+            {
+                TemplateItemId = i.Id,
+                Question = i.Question,
+                Type = Enum.Parse<QuestionType>(i.Type),
+                OrderNo = i.OrderNo,
+                Answer = "",
+                CheckBox = i.ItemDetails.Select(d => new SurveyItemDetailRequestDTO
+                {
+                    TemplateItemDetailId = d.Id,
+                    Item = d.Item,
+                    IsChecked = false
+                }).ToList()
+            }).ToList();
+        }
+        
+        showTemplateModal = false;
+        showTemplateUpdateWarning = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleSaveDraft()
+    {
+        reqDto.Status = StatusType.Draft;
+        await ProcessSave();
+    }
+
+    private async Task HandleSubmit()
+    {
+        reqDto.Status = StatusType.ConfirmToApprove;
+        await ProcessSave();
+    }
+
+    private async Task ProcessSave()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(reqDto.TemplateHeaderId))
+            {
+                await JS.InvokeVoidAsync("alert", "Please select a template first");
+                return;
+            }
+
+            if (isEditMode)
+            {
+                await SurveyService.UpdateSurveyHeader(currentSurveyId!, reqDto);
+            }
+            else
+            {
+                reqDto.RequesterId = AuthState.CurrentUser?.Id!;
+                await SurveyService.CreateSurveyHeader(reqDto);
+            }
+            
+            NavigationManager.NavigateTo("/surveys");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            await JS.InvokeVoidAsync("alert", "Error: " + ex.Message);
+        }
+    }
+
+    private async Task HandleDelete()
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete survey {reqDto.DocumentId}?"))
+        {
+            await SurveyService.DeleteSurveyHeader(currentSurveyId!);
+            NavigationManager.NavigateTo("/surveys");
+        }
+    }
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        "Draft" => "bg-warning",
+        "ConfirmToApprove" => "bg-info",
+        "Approved" => "bg-success",
+        "Rejected" => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private string GetStatusDisplay(string status) => status switch
+    {
+        "ConfirmToApprove" => "Pending Approval",
+        _ => status
+    };
+}

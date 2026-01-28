@@ -5,10 +5,11 @@ using System.Threading.Tasks;
 using TaskSurvey.Infrastructure.DTOs.SurveyDTOs;
 using TaskSurvey.Infrastructure.Mappers;
 using TaskSurvey.Infrastructure.Repositories.IRepositories;
+using TaskSurvey.Infrastructure.Services.IServices;
 
 namespace TaskSurvey.Infrastructure.Services
 {
-    public class SurveyService
+    public class SurveyService : ISurveyService
     {
         private readonly ISurveyRepository _repository;
 

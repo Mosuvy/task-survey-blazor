@@ -15,6 +15,7 @@ namespace TaskSurvey.Infrastructure.DTOs.SurveyDTOs
         public string RequesterId { get; set; } = null!;
         public StatusType Status { get; set; } = StatusType.Draft;
         public string? TemplateHeaderId { get; set; }
+        public DateTime UpdatedAtTemplate { get; set; }
 
         public List<SurveyItemRequestDTO> SurveyItems { get; set; } = new();
     }
