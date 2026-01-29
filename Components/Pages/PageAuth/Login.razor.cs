@@ -84,27 +84,41 @@ public partial class Login : ComponentBase
 
     private async Task ShowSuccessAlert(string message)
     {
-        await JS.InvokeVoidAsync("Swal.fire", new
+        try
         {
-            icon = "success",
-            title = "Success!",
-            text = message,
-            timer = 1500,
-            showConfirmButton = false,
-            toast = true,
-            position = "top-end"
-        });
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                icon = "success",
+                title = "Success!",
+                text = message,
+                timer = 1500,
+                showConfirmButton = false,
+                toast = true,
+                position = "top-end"
+            });
+        }
+        catch
+        {
+            await JS.InvokeVoidAsync("alert", message);
+        }
     }
 
     private async Task ShowErrorAlert(string message)
     {
-        await JS.InvokeVoidAsync("Swal.fire", new
+        try
         {
-            icon = "error",
-            title = "Error!",
-            text = message,
-            confirmButtonText = "OK",
-            confirmButtonColor = "#4F46E5"
-        });
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                icon = "error",
+                title = "Error!",
+                text = message,
+                confirmButtonText = "OK",
+                confirmButtonColor = "#4F46E5"
+            });
+        }
+        catch
+        {
+            await JS.InvokeVoidAsync("alert", message);
+        }
     }
 }
