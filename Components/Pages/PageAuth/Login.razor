@@ -1,21 +1,24 @@
 @page "/login"
+@namespace TaskSurvey.Components.Pages.Login
 @layout AuthLayout
 @rendermode InteractiveServer
-@inject NavigationManager NavigationManager
-@inject IJSRuntime JS
-@inject IAuthService AuthService
-@inject AuthState AuthState
 
-<PageTitle>Login</PageTitle>
+<PageTitle>Login - TaskSurvey</PageTitle>
 
-<div class="container">
+<div class="container bg-main" style="min-height: 100vh;">
     <div class="row justify-content-center align-items-center min-vh-100">
         <div class="col-md-5 col-lg-4">
-            <div class="card border-0 shadow-lg rounded-3">
+            <div class="card border-custom shadow-lg rounded-3 bg-card">
                 <!-- Header -->
-                <div class="card-header text-white text-center py-4 border-0" style="background: #0ea5e9;">
+                <div class="card-header bg-primary text-white text-center py-4 border-0">
+                    <div class="mb-3">
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-3 p-3" 
+                             style="background: rgba(255, 255, 255, 0.2);">
+                            <i class="bi bi-clipboard-check fs-1"></i>
+                        </div>
+                    </div>
                     <h4 class="mb-1 fw-bold">Welcome Back</h4>
-                    <p class="mb-0 opacity-75" style="font-size: 0.9rem;">Login to your account</p>
+                    <p class="mb-0 opacity-75">Login to TaskSurvey</p>
                 </div>
 
                 <!-- Body -->
@@ -23,63 +26,50 @@
                     <form @onsubmit="HandleLogin">
                         <!-- Username -->
                         <div class="mb-3">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">
-                                <i class="bi bi-person me-1" style="color: #0ea5e9;"></i>Username
+                            <label class="form-label fw-semibold text-title mb-2">
+                                <i class="bi bi-person me-1 text-primary"></i>Username
                             </label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   @bind="loginViewModel.Username"
-                                   placeholder="Enter your username"
-                                   autocomplete="username"
-                                   required 
-                                   style="font-size: 0.95rem;" />
+                            <div class="input-group">
+                                <span class="input-group-text bg-main border-custom">
+                                    <i class="bi bi-person-fill text-primary"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control border-custom" 
+                                       @bind="loginViewModel.Username"
+                                       placeholder="Enter your username"
+                                       autocomplete="username"
+                                       required />
+                            </div>
                         </div>
 
                         <!-- Password -->
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">
-                                <i class="bi bi-lock me-1" style="color: #0ea5e9;"></i>Password
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-title mb-2">
+                                <i class="bi bi-lock me-1 text-primary"></i>Password
                             </label>
                             <div class="input-group">
+                                <span class="input-group-text bg-main border-custom">
+                                    <i class="bi bi-lock-fill text-primary"></i>
+                                </span>
                                 <input type="@(showPassword ? "text" : "password")" 
-                                       class="form-control border-end-0" 
+                                       class="form-control border-custom" 
                                        @bind="loginViewModel.Password"
                                        placeholder="Enter your password"
                                        autocomplete="current-password"
-                                       required 
-                                       style="font-size: 0.95rem;" />
-                                <button class="btn btn-outline-secondary bg-white border-start-0" 
+                                       required />
+                                <button class="btn btn-outline-secondary border-custom" 
                                         type="button" 
                                         @onclick="TogglePasswordVisibility"
                                         title="@(showPassword ? "Hide password" : "Show password")">
-                                    <i class="bi @(showPassword ? "bi-eye-slash" : "bi-eye")" style="color: #64748b;"></i>
+                                    <i class="bi @(showPassword ? "bi-eye-slash" : "bi-eye") text-muted"></i>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Error Message -->
-                        @if (!string.IsNullOrEmpty(errorMessage))
-                        {
-                            <div class="alert alert-danger border-0 py-2 mb-3" role="alert" style="font-size: 0.9rem;">
-                                <i class="bi bi-exclamation-circle-fill me-2"></i>
-                                @errorMessage
-                            </div>
-                        }
-
-                        <!-- Success Message -->
-                        @if (!string.IsNullOrEmpty(successMessage))
-                        {
-                            <div class="alert alert-success border-0 py-2 mb-3" role="alert" style="font-size: 0.9rem;">
-                                <i class="bi bi-check-circle-fill me-2"></i>
-                                @successMessage
-                            </div>
-                        }
-
                         <!-- Submit Button -->
                         <button type="submit" 
-                                class="btn text-white w-100 py-2 fw-semibold shadow-sm" 
-                                disabled="@isLoading"
-                                style="background: #0ea5e9; border: none;">
+                                class="btn btn-primary text-white w-100 py-3 fw-semibold shadow-sm" 
+                                disabled="@isLoading">
                             @if (isLoading)
                             {
                                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -91,102 +81,24 @@
                                 <span>Login</span>
                             }
                         </button>
-
-                        <!-- Divider -->
-                        <div class="position-relative my-4">
-                            <hr class="text-muted" />
-                            <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted" style="font-size: 0.85rem;">
-                                or
-                            </span>
-                        </div>
-
-                        <!-- Register Link -->
-                        <div class="text-center">
-                            <span class="text-muted" style="font-size: 0.9rem;">Don't have an account?</span>
-                            <a href="/register" class="fw-semibold ms-1" style="color: #0ea5e9; text-decoration: none;">
-                                Register
-                            </a>
-                        </div>
                     </form>
                 </div>
 
                 <!-- Footer -->
-                <div class="card-footer bg-light text-center py-3 border-0">
+                <div class="card-footer bg-main text-center py-3 border-top border-custom">
                     <small class="text-muted">
                         <i class="bi bi-shield-check me-1"></i>
                         Secure Login
                     </small>
                 </div>
             </div>
+
+            <!-- Copyright -->
+            <div class="text-center mt-4">
+                <small class="text-muted">
+                    © @DateTime.Now.Year TaskSurvey. All rights reserved.
+                </small>
+            </div>
         </div>
     </div>
 </div>
-
-@code {
-    private LoginRequestDTO loginViewModel = new();
-    private string errorMessage = "";
-    private string successMessage = "";
-    private bool isLoading = false;
-    private bool showPassword = false;
-
-    private void TogglePasswordVisibility()
-    {
-        showPassword = !showPassword;
-    }
-
-    private async Task HandleLogin()
-    {
-        try
-        {
-            isLoading = true;
-            errorMessage = "";
-            successMessage = "";
-
-            // Validasi
-            if (string.IsNullOrEmpty(loginViewModel.Username))
-            {
-                errorMessage = "Username is required";
-                isLoading = false;
-                return;
-            }
-
-            if (string.IsNullOrEmpty(loginViewModel.Password))
-            {
-                errorMessage = "Password is required";
-                isLoading = false;
-                return;
-            }
-
-            var loginDTO = new LoginRequestDTO 
-            { 
-                Username = loginViewModel.Username, 
-                Password = loginViewModel.Password,
-            };
-
-            var result = await AuthService.Login(loginDTO);
-            
-            if (result != null)
-            {
-                successMessage = "Login successful! Redirecting...";
-                AuthState.SetAuthenticationState(result);
-                var userJson = JsonSerializer.Serialize(result);
-                await JS.InvokeVoidAsync("sessionStorage.setItem", "UserSession", userJson);
-                await Task.Delay(1000);
-
-                NavigationManager.NavigateTo("/dashboard", true);
-            }
-            else
-            {
-                errorMessage = "Invalid username or password";
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"An error occurred: {ex.Message}";
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-}
