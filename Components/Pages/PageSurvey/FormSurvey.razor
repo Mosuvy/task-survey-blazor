@@ -1,7 +1,4 @@
 @page "/surveys/form"
-@using Microsoft.AspNetCore.WebUtilities
-@using System.Text.Json
-@using TaskSurvey.Infrastructure.Models
 @layout MainLayout
 @rendermode InteractiveServer
 @inject ISurveyService SurveyService
@@ -11,11 +8,6 @@
 @inject TaskSurvey.StateServices.AuthState AuthState
 @inject TaskSurvey.Infrastructure.Data.AppDbContext DbContext
 @inject IJSRuntime JS
-@using TaskSurvey.Infrastructure.DTOs.SurveyDTOs
-@using TaskSurvey.Infrastructure.DTOs.TemplateDTOs
-@using TaskSurvey.Infrastructure.DTOs.UserDTOs
-@using TaskSurvey.Infrastructure.Mappers
-@using TaskSurvey.Infrastructure.Utils
 
 <PageTitle>Survey Form</PageTitle>
 
