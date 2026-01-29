@@ -1,11 +1,7 @@
 @page "/templates"
+@namespace TaskSurvey.Components.Pages.IndexTemplate
 @layout MainLayout
 @rendermode InteractiveServer
-@inject ITemplateService TemplateService
-@inject IPositionService PositionService
-@inject IJSRuntime JSRuntime
-@inject AuthState AuthState
-@inject NavigationManager NavigationManager
 
 <PageTitle>Template Management</PageTitle>
 
@@ -157,80 +153,3 @@
         </div>
     </div>
 </div>
-
-@code {
-    private List<TemplateHeaderResponseDTO> templates = new();
-    private List<TemplateHeaderResponseDTO> filteredTemplates = new();
-    private List<PositionResponseDTO> positions = new();
-    
-    private string searchQuery = "";
-    private int userPositionId = 0;
-    private bool isDataLoaded = false;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await LoadAuthStateFromSession();
-            
-            userPositionId = AuthState.CurrentUser?.PositionId ?? 0;
-            
-            await LoadData();
-            
-            isDataLoaded = true;
-            StateHasChanged();
-        }
-    }
-
-    private async Task LoadAuthStateFromSession()
-    {
-        try
-        {
-            var userJson = await JSRuntime.InvokeAsync<string>("sessionStorage.getItem", "UserSession");
-            
-            if (!string.IsNullOrEmpty(userJson))
-            {
-                var user = JsonSerializer.Deserialize<User>(userJson);
-                if (user != null)
-                {
-                    AuthState.SetAuthenticationState(user);
-                    return;
-                }
-            }
-            
-            NavigationManager.NavigateTo("/login", true);
-        }
-        catch (Exception)
-        {
-            NavigationManager.NavigateTo("/login", true);
-        }
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        positions = await PositionService.GetPositions();
-    }
-
-    private async Task LoadData()
-    {
-        Console.WriteLine("DEBUG: Position ID is " + userPositionId);
-        
-        templates = await TemplateService.GetTemplateByPositionId(userPositionId) ?? new();
-        ApplyFilters();
-    }
-
-    private void ApplyFilters()
-    {
-        var result = templates.AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            var q = searchQuery.ToLower();
-            result = result.Where(t => t.TemplateName.ToLower().Contains(q) || t.Id.Contains(q));
-        }
-
-        filteredTemplates = result.ToList();
-    }
-
-    private void EditTemplate(string id) => NavigationManager.NavigateTo($"/templates/form?templateId={id}");
-}

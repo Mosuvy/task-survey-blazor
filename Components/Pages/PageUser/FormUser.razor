@@ -1,13 +1,7 @@
 @page "/users/form"
+@namespace TaskSurvey.Components.Pages.FormUser
 @layout MainLayout
 @rendermode InteractiveServer
-@inject IUserService UserService
-@inject IPositionService PositionService
-@inject NavigationManager NavigationManager
-@inject IJSRuntime JSRuntime
-@inject TaskSurvey.Infrastructure.Data.AppDbContext DbContext
-@inject AuthState AuthState
-@inject IJSRuntime JS
 
 <PageTitle>Form User</PageTitle>
 
@@ -136,7 +130,7 @@
 
             <!-- Supervisor Card -->
             <div class="card border-custom shadow-sm rounded-3 mb-4 bg-card">
-                <div class="card-header text-white py-3 px-4 border-0" style="background-color: var(--bs-secondary);">
+                <div class="card-header bg-secondary text-white py-3 px-4 border-0">
                     <div class="d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 fw-semibold">
                             <i class="bi bi-person-lines-fill me-2"></i>Supervisor Details
@@ -154,9 +148,8 @@
                             <div class="input-group">
                                 <input type="text" class="form-control bg-main border-custom @(hasAttemptedSubmit && string.IsNullOrWhiteSpace(reqDto.SupervisorId) ? "is-invalid" : "")" 
                                        @bind="reqDto.SupervisorId" readonly />
-                                <button class="btn text-white px-4" type="button" 
-                                        @onclick="OpenSupervisorLookupModal"
-                                        style="background-color: var(--bs-secondary);">
+                                <button class="btn bg-secondary text-white px-4" type="button" 
+                                        @onclick="OpenSupervisorLookupModal">
                                     <i class="bi bi-search me-1"></i>Select
                                 </button>
                             </div>
@@ -281,7 +274,7 @@
      style="display: @(showSupLookup ? "block" : "none");">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg bg-card">
-            <div class="modal-header text-white border-0" style="background-color: var(--bs-secondary);">
+            <div class="modal-header bg-secondary text-white border-0">
                 <h5 class="modal-title fw-semibold">
                     <i class="bi bi-search me-2"></i>Select Supervisor (Officer)
                 </h5>
@@ -329,14 +322,13 @@
                                         <td class="fw-semibold text-primary">@item.Id</td>
                                         <td class="text-body">@item.Username</td>
                                         <td>
-                                            <span class="badge rounded-pill" style="background-color: var(--bs-secondary);">
+                                            <span class="badge bg-secondary rounded-pill">
                                                 @item.PositionName
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            <button class="btn btn-sm text-white px-3" 
-                                                    @onclick="() => SelectSup(item)"
-                                                    style="background-color: var(--bs-secondary);">
+                                            <button class="btn btn-sm bg-secondary text-white px-3" 
+                                                    @onclick="() => SelectSup(item)">
                                                 <i class="bi bi-check-lg me-1"></i>Select
                                             </button>
                                         </td>
@@ -351,291 +343,8 @@
     </div>
 </div>
 
-<!-- Submit Confirmation Modal -->
-<div class="modal fade @(showSubmitModal ? "show" : "")" tabindex="-1" 
-     style="display: @(showSubmitModal ? "block" : "none");">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg bg-card">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold text-title">
-                    <i class="bi bi-question-circle text-primary me-2"></i>Confirm @(isEditMode ? "Update" : "Submission")
-                </h5>
-                <button type="button" class="btn-close" @onclick="() => showSubmitModal = false"></button>
-            </div>
-            <div class="modal-body text-body">
-                <p class="mb-0">Are you sure you want to @(isEditMode ? "update" : "create") this user?</p>
-                <div class="bg-main rounded-3 p-3 mt-3">
-                    <small class="text-muted d-block mb-1">User Details:</small>
-                    <ul class="list-unstyled mb-0 small">
-                        <li><strong>ID:</strong> @displayId</li>
-                        <li><strong>Username:</strong> @reqDto.Username</li>
-                        <li><strong>Position:</strong> @reqDto.PositionName</li>
-                        <li><strong>Supervisor:</strong> @selectedSupName</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-outline-secondary border-custom" @onclick="() => showSubmitModal = false">
-                    <i class="bi bi-x-circle me-1"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-success-custom" @onclick="HandleSubmit">
-                    <i class="bi bi-check-circle me-1"></i>Yes, @(isEditMode ? "Update" : "Submit")
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Confirmation Modal -->
-<div class="modal fade @(showDeleteModal ? "show" : "")" tabindex="-1" 
-     style="display: @(showDeleteModal ? "block" : "none");">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg bg-card">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold text-title">
-                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirm Deletion
-                </h5>
-                <button type="button" class="btn-close" @onclick="() => showDeleteModal = false"></button>
-            </div>
-            <div class="modal-body text-body">
-                <p class="mb-2">Are you sure you want to delete this user?</p>
-                <div class="alert alert-danger border-0 mb-0">
-                    <small><i class="bi bi-info-circle me-1"></i>This action cannot be undone!</small>
-                </div>
-                <div class="bg-main rounded-3 p-3 mt-3">
-                    <small class="text-muted d-block mb-1">User to be deleted:</small>
-                    <ul class="list-unstyled mb-0 small">
-                        <li><strong>ID:</strong> @displayId</li>
-                        <li><strong>Username:</strong> @reqDto.Username</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-outline-secondary border-custom" @onclick="() => showDeleteModal = false">
-                    <i class="bi bi-x-circle me-1"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-danger-custom" @onclick="HandleDelete">
-                    <i class="bi bi-trash me-1"></i>Yes, Delete
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Modal Backdrop -->
-@if (showSupLookup || showUserLookup || showSubmitModal || showDeleteModal)
+@if (showSupLookup || showUserLookup)
 {
     <div class="modal-backdrop fade show"></div>
-}
-
-@code {
-    private UserRequestDTO reqDto = new();
-    private List<PositionResponseDTO> positions = new();
-    private List<UserResponseDTO> supLookupList = new();
-    private List<UserResponseDTO> allUsersList = new();
-    
-    private string displayId = "";
-    private string? currentUserId;
-    private bool isEditMode = false;
-    private bool showSupLookup = false;
-    private bool showUserLookup = false;
-    private bool showSubmitModal = false;
-    private bool showDeleteModal = false;
-    private bool hasAttemptedSubmit = false;
-    private string searchQuery = "";
-    private string? alertMessage;
-    private string? successMessage;
-    private string selectedSupName = "";
-    private string selectedSupPos = "";
-    private bool isUser = false;
-    
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await LoadAuthStateFromSession();
-            
-            isUser = AuthState.CurrentUser?.RoleId == 2;
-            if(isUser)
-                NavigationManager.NavigateTo("/dashboard", true);
-            
-            StateHasChanged();
-        }
-    }
-
-    private async Task LoadAuthStateFromSession()
-    {
-        try
-        {
-            var userJson = await JS.InvokeAsync<string>("sessionStorage.getItem", "UserSession");
-            
-            if (!string.IsNullOrEmpty(userJson))
-            {
-                var user = JsonSerializer.Deserialize<User>(userJson);
-                if (user != null)
-                {
-                    AuthState.SetAuthenticationState(user);
-                    return;
-                }
-            }
-            
-            NavigationManager.NavigateTo("/login", true);
-        }
-        catch (Exception)
-        {
-            NavigationManager.NavigateTo("/login", true);
-        }
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        positions = await PositionService.GetPositions();
-        supLookupList = (await UserService.GetUserByRoleId(1)) ?? new();
-        allUsersList = await UserService.GetUsers();
-
-        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("userId", out var id))
-        {
-            await SelectUserToEdit(id!);
-        }
-        else
-        {
-            await GenerateNextId();
-        }
-    }
-
-    private string GetValidationClass(string? value) => 
-        hasAttemptedSubmit && string.IsNullOrWhiteSpace(value) ? "is-invalid" : "";
-
-    private async Task GenerateNextId() => displayId = await IdGeneratorUtil.GetNextFormattedUserId(DbContext, false);
-
-    private void OpenUserLookupModal()
-    {
-        showUserLookup = true;
-        searchQuery = "";
-    }
-
-    private void OpenSupervisorLookupModal()
-    {
-        showSupLookup = true;
-        searchQuery = "";
-    }
-
-    private async Task SelectUserToEdit(string id)
-    {
-        CloseModals();
-        currentUserId = id;
-        isEditMode = true;
-        displayId = id;
-        
-        var user = await UserService.GetUserById(id);
-        if (user != null)
-        {
-            reqDto.Username = user.Username;
-            reqDto.PositionId = user.PositionId; 
-            reqDto.PositionName = user.PositionName;
-            reqDto.SupervisorId = user.Supervisor?.Id;
-            selectedSupName = user.Supervisor?.Username ?? "";
-            selectedSupPos = user.Supervisor?.PositionName ?? "";
-        }
-        StateHasChanged();
-    }
-
-    private void SelectSup(UserResponseDTO s)
-    {
-        reqDto.SupervisorId = s.Id;
-        selectedSupName = s.Username;
-        selectedSupPos = s.PositionName;
-        CloseModals();
-    }
-
-    private void CloseModals() 
-    { 
-        showSupLookup = false; 
-        showUserLookup = false; 
-        searchQuery = ""; 
-    }
-
-    private void ShowSubmitConfirmation()
-    {
-        hasAttemptedSubmit = true;
-        alertMessage = null;
-
-        // Validate all required fields
-        if (string.IsNullOrWhiteSpace(reqDto.Username) || 
-            reqDto.PositionId == 0 || 
-            string.IsNullOrWhiteSpace(reqDto.PositionName) || 
-            string.IsNullOrWhiteSpace(reqDto.SupervisorId))
-        {
-            alertMessage = "Please complete all required fields before submitting.";
-            return;
-        }
-
-        showSubmitModal = true;
-    }
-
-    private async Task HandleSubmit()
-    {
-        showSubmitModal = false;
-        alertMessage = null;
-        successMessage = null;
-
-        try 
-        {
-            reqDto.RoleId = 2;
-            reqDto.PasswordHash = ""; 
-
-            if (isEditMode)
-            {
-                await UserService.UpdateUser(currentUserId!, reqDto, reqDto.SupervisorId);
-                successMessage = "User updated successfully!";
-            }
-            else
-            {
-                await UserService.CreateUser(reqDto);
-                successMessage = "User created successfully!";
-            }
-            
-            NavigationManager.NavigateTo("/users");
-        }
-        catch (Exception ex) 
-        { 
-            alertMessage = "Error: " + ex.Message; 
-        }
-    }
-
-    private async Task ResetForm()
-    {
-        isEditMode = false;
-        hasAttemptedSubmit = false;
-        alertMessage = null;
-        successMessage = null;
-        currentUserId = null;
-        reqDto = new UserRequestDTO();
-        selectedSupName = "";
-        selectedSupPos = "";
-        await GenerateNextId();
-        NavigationManager.NavigateTo("/users/form", true);
-    }
-
-    private void ShowDeleteConfirmation()
-    {
-        showDeleteModal = true;
-    }
-
-    private async Task HandleDelete()
-    {
-        showDeleteModal = false;
-        
-        try
-        {
-            await UserService.DeleteUser(currentUserId!);
-            successMessage = "User deleted successfully!";
-            NavigationManager.NavigateTo("/users");
-        }
-        catch (Exception ex)
-        {
-            alertMessage = "Error deleting user: " + ex.Message;
-        }
-    }
 }

@@ -173,10 +173,7 @@
                 await JS.InvokeVoidAsync("sessionStorage.setItem", "UserSession", userJson);
                 await Task.Delay(1000);
 
-                if(result.RoleId == 1)
-                    NavigationManager.NavigateTo("/dashboard");
-                else if(result.RoleId == 2)
-                    NavigationManager.NavigateTo("/dashboard");
+                NavigationManager.NavigateTo("/dashboard", true);
             }
             else
             {
