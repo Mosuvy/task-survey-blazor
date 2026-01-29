@@ -299,23 +299,76 @@
                                     else if (item.Type == QuestionType.CheckBox)
                                     {
                                         <div class="card border-custom @(isViewOnly ? "bg-main" : "") p-3 rounded-3">
+                                            <!-- Checkbox items dari template -->
                                             @foreach (var detail in item.CheckBox)
                                             {
                                                 <div class="form-check mb-2">
                                                     <input class="form-check-input" type="checkbox" 
                                                            checked="@detail.IsChecked"
                                                            disabled="@(isViewOnly || isSupervisor)"
-                                                           id="det-@detail.Id"
+                                                           id="det-@detail.Id-@item.OrderNo"
                                                            @onchange="@((ChangeEventArgs e) => {
-                                                               if (!isViewOnly && !isSupervisor) detail.IsChecked = (bool)(e.Value ?? false);
+                                                               if (!isViewOnly && !isSupervisor) {
+                                                                   detail.IsChecked = (bool)(e.Value ?? false);
+                                                               }
                                                            })" />
-                                                    <label class="form-check-label ms-2 text-body" for="det-@detail.Id">
+                                                    <label class="form-check-label ms-2 text-body" for="det-@detail.Id-@item.OrderNo">
                                                         @detail.Item
                                                     </label>
                                                 </div>
                                             }
+
+                                            <!-- Checkbox "Lainnya" (virtual) -->
+                                            @{
+                                                var lainnyaChecked = !string.IsNullOrWhiteSpace(item.Answer);
+                                                var collapseId = $"collapse-lainnya-{item.OrderNo}";
+                                                var checkboxId = $"det-lainnya-{item.OrderNo}";
+                                            }
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" 
+                                                       type="checkbox"
+                                                       checked="@lainnyaChecked"
+                                                       disabled="@(isViewOnly || isSupervisor)"
+                                                       id="@checkboxId"
+                                                       @onclick="@(async () => {
+                                                           if (!isViewOnly && !isSupervisor) {
+                                                               bool newState = string.IsNullOrWhiteSpace(item.Answer);
+                                                               item.Answer = newState ? " " : string.Empty;
+                                                               StateHasChanged();
+                                                               await Task.Delay(10);
+                                                               await JS.InvokeVoidAsync("toggleLainnyaCollapse", checkboxId, collapseId);
+                                                           }
+                                                       })" />
+                                                <label class="form-check-label ms-2 text-body" for="@checkboxId">
+                                                    Lainnya
+                                                </label>
+                                            </div>
+
+                                            <!-- Textbox untuk "Lainnya" dengan Bootstrap Collapse -->
+                                            <div class="collapse @(lainnyaChecked ? "show" : "")" id="@collapseId">
+                                                <div class="mt-2">
+                                                    <input type="text" 
+                                                           class="form-control border-custom @(hasAttemptedSubmit && lainnyaChecked && string.IsNullOrWhiteSpace(item.Answer?.Trim()) ? "is-invalid" : "")"
+                                                           placeholder="Silakan tulis jawaban lainnya..."
+                                                           value="@(item.Answer?.Trim() ?? "")"
+                                                           @oninput="@((ChangeEventArgs e) => {
+                                                               if (!isViewOnly && !isSupervisor) {
+                                                                   var val = e.Value?.ToString() ?? "";
+                                                                   item.Answer = string.IsNullOrWhiteSpace(val) ? " " : val;
+                                                               }
+                                                           })"
+                                                           disabled="@(isViewOnly || isSupervisor)" />
+                                                    @if (hasAttemptedSubmit && lainnyaChecked && string.IsNullOrWhiteSpace(item.Answer?.Trim()))
+                                                    {
+                                                        <div class="invalid-feedback d-block">
+                                                            <i class="bi bi-exclamation-circle me-1"></i>Harap isi keterangan "Lainnya"
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
                                         </div>
-                                        @if (hasAttemptedSubmit && !item.CheckBox.Any(cb => cb.IsChecked))
+                                        
+                                        @if (hasAttemptedSubmit && !item.CheckBox.Any(cb => cb.IsChecked) && string.IsNullOrWhiteSpace(item.Answer))
                                         {
                                             <div class="text-danger small mt-2">
                                                 <i class="bi bi-exclamation-circle me-1"></i>Please select at least one option
@@ -367,7 +420,7 @@
     </div>
 </div>
 
-<!-- Template Selection Modal (Only modal that remains) -->
+<!-- Template Selection Modal -->
 <div class="modal fade @(showTemplateModal ? "show" : "")" tabindex="-1" 
      style="display: @(showTemplateModal ? "block" : "none");">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -397,9 +450,9 @@
                         </thead>
                         <tbody>
                             @{
-                                var filtered = allTemplates.Where(x => x.TemplateName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
+                                var filteredTemplates = allTemplates.Where(x => x.TemplateName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
                             }
-                            @if (!filtered.Any())
+                            @if (!filteredTemplates.Any())
                             {
                                 <tr>
                                     <td colspan="3" class="text-center py-5 text-muted">
@@ -410,7 +463,7 @@
                             }
                             else
                             {
-                                @foreach (var t in filtered)
+                                @foreach (var t in filteredTemplates)
                                 {
                                     <tr>
                                         <td class="ps-3 fw-semibold text-primary">@t.Id</td>
@@ -431,11 +484,29 @@
     </div>
 </div>
 
-<!-- Modal Backdrop -->
 @if (showTemplateModal)
 {
     <div class="modal-backdrop fade show"></div>
 }
+
+<script>
+    window.toggleLainnyaCollapse = function(checkboxId, collapseId) {
+        const checkbox = document.getElementById(checkboxId);
+        const collapseElement = document.getElementById(collapseId);
+        
+        if (checkbox && collapseElement) {
+            const bsCollapse = new bootstrap.Collapse(collapseElement, {
+                toggle: false
+            });
+            
+            if (checkbox.checked) {
+                bsCollapse.show();
+            } else {
+                bsCollapse.hide();
+            }
+        }
+    };
+</script>
 
 <style>
     .transition-icon {

@@ -142,7 +142,7 @@ public partial class FormSurvey : ComponentBase
                 Question = si.Question,
                 Type = Enum.Parse<QuestionType>(si.Type),
                 OrderNo = si.OrderNo,
-                Answer = si.Answer,
+                Answer = si.Answer ?? string.Empty, // Pastikan tidak null
                 CheckBox = si.CheckBox.Select(cb => new SurveyItemDetailRequestDTO
                 {
                     Id = cb.Id,
@@ -182,7 +182,7 @@ public partial class FormSurvey : ComponentBase
             Question = i.Question,
             Type = Enum.Parse<QuestionType>(i.Type),
             OrderNo = i.OrderNo,
-            Answer = "",
+            Answer = string.Empty, // Inisialisasi dengan string kosong
             CheckBox = i.ItemDetails.Select(d => new SurveyItemDetailRequestDTO
             {
                 TemplateItemDetailId = d.Id,
@@ -283,6 +283,7 @@ public partial class FormSurvey : ComponentBase
         hasAttemptedSubmit = true;
         alertMessage = null;
 
+        // Validasi template
         if (string.IsNullOrEmpty(reqDto.TemplateHeaderId))
         {
             await JS.InvokeVoidAsync("Swal.fire", new
@@ -295,12 +296,28 @@ public partial class FormSurvey : ComponentBase
             return;
         }
 
+        // Validasi semua item
         bool hasEmptyAnswers = reqDto.SurveyItems.Any(item => 
         {
             if (item.Type == QuestionType.CheckBox)
             {
-                return !item.CheckBox.Any(cb => cb.IsChecked);
+                // Cek jika ada checkbox biasa yang dicentang
+                var hasCheckedRegular = item.CheckBox.Any(cb => cb.IsChecked);
+                
+                // Cek jika "Lainnya" aktif (Answer tidak kosong dan bukan hanya spasi)
+                var isLainnyaChecked = !string.IsNullOrWhiteSpace(item.Answer);
+                
+                if (isLainnyaChecked)
+                {
+                    // Jika "Lainnya" dicentang, pastikan ada isian teksnya (bukan hanya spasi)
+                    return string.IsNullOrWhiteSpace(item.Answer?.Trim());
+                }
+                
+                // Jika tidak ada yang dicentang (baik checkbox biasa maupun "Lainnya")
+                return !hasCheckedRegular && !isLainnyaChecked;
             }
+            
+            // Untuk tipe pertanyaan lain, validasi string kosong
             return string.IsNullOrWhiteSpace(item.Answer);
         });
 
@@ -316,6 +333,7 @@ public partial class FormSurvey : ComponentBase
             return;
         }
 
+        // Tampilkan konfirmasi submit
         try
         {
             var result = await JS.InvokeAsync<JsonElement>("Swal.fire", new
