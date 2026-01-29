@@ -13,175 +13,267 @@
 @inject NavigationManager NavigationManager
 @inject AuthState AuthState
 @inject TaskSurvey.Infrastructure.Data.AppDbContext DbContext
-<PageTitle>Form Template</PageTitle>
 
-<div class="container mt-4 mb-5">
+<PageTitle>Form Template</PageTitle>
+<div class="container-fluid px-4 py-4 bg-main" style="min-height: 100vh;">
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <!-- Header -->
-            <div class="mb-3">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                    <div class="text-white p-2 rounded" style="background: #0ea5e9;">
-                        <i class="bi bi-file-earmark-text fs-5"></i>
+            <div class="mb-4">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="bg-primary text-white p-3 rounded-3 shadow-sm">
+                        <i class="bi bi-file-earmark-text fs-4"></i>
                     </div>
                     <div>
-                        <h4 class="mb-0 fw-bold text-dark">@(isEditMode ? "Edit Template" : "Create New Template")</h4>
-                        <p class="text-muted mb-0" style="font-size: 0.85rem;">@(isEditMode ? $"Modify template for ID: {reqDto.Id}" : "Create a new survey template")</p>
+                        <h3 class="mb-1 fw-bold text-title">@(isEditMode ? "Edit Template" : "Create New Template")</h3>
+                        <p class="text-muted mb-0" style="font-size: 0.9rem;">
+                            @(isEditMode ? $"Modify template for ID: {reqDto.Id}" : "Create a new survey template")
+                        </p>
                     </div>
                 </div>
             </div>
 
+            @if (!string.IsNullOrEmpty(alertMessage))
+            {
+                <div class="alert alert-danger border-0 shadow-sm mb-3 alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Error!</strong> @alertMessage
+                    <button type="button" class="btn-close" @onclick="() => alertMessage = null"></button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success border-0 shadow-sm mb-3 alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    <strong>Success!</strong> @successMessage
+                    <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+                </div>
+            }
+
             <!-- Survey Header Card -->
-            <div class="card border-0 shadow-sm rounded-3 mb-3">
-                <div class="card-header text-white py-2 px-3" style="background: #0ea5e9;">
+            <div class="card border-custom shadow-sm rounded-3 mb-3 bg-card">
+                <div class="card-header bg-primary text-white py-3 px-4 border-0">
                     <h6 class="mb-0 fw-semibold">
                         <i class="bi bi-card-heading me-2"></i>Survey Header
                     </h6>
                 </div>
                 
-                <div class="card-body p-3">
+                <div class="card-body p-4">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">
-                                <i class="bi bi-hash me-1" style="color: #0ea5e9;"></i>Template ID
+                            <label class="form-label fw-semibold text-title mb-2">
+                                <i class="bi bi-hash me-1 text-primary"></i>Template ID
+                                <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0">
-                                    <i class="bi bi-fingerprint" style="color: #0ea5e9;"></i>
+                                <span class="input-group-text bg-main border-custom">
+                                    <i class="bi bi-fingerprint text-primary"></i>
                                 </span>
-                                <input type="text" class="form-control bg-light fw-semibold border-start-0" @bind="reqDto.Id" readonly style="font-size: 0.95rem;" />
-                                <button class="btn text-white px-3" type="button" @onclick="() => showLookupModal = true"
-                                        style="background: #0ea5e9; border: none;">
+                                <input type="text" class="form-control bg-main border-custom fw-semibold text-body" 
+                                       @bind="reqDto.Id" readonly />
+                                <button class="btn btn-primary px-4" type="button" @onclick="OpenLookupModal">
                                     <i class="bi bi-search me-1"></i>Lookup
                                 </button>
                             </div>
+                            <small class="text-muted">Auto-generated or select existing template to edit</small>
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">
-                                <i class="bi bi-text-left me-1" style="color: #0ea5e9;"></i>Template Name
+                            <label class="form-label fw-semibold text-title mb-2">
+                                <i class="bi bi-text-left me-1 text-primary"></i>Template Name
+                                <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control" @bind="reqDto.TemplateName" 
-                                   placeholder="Enter template name..." style="font-size: 0.95rem;" />
+                            <input type="text" class="form-control border-custom @GetValidationClass(reqDto.TemplateName)" 
+                                   @bind="reqDto.TemplateName" placeholder="Template Survey 1" />
+                            @if (hasAttemptedSubmit && string.IsNullOrWhiteSpace(reqDto.TemplateName))
+                            {
+                                <div class="invalid-feedback d-block">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Template name is required
+                                </div>
+                            }
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">
-                                <i class="bi bi-diagram-3 me-1" style="color: #0ea5e9;"></i>Position Level
+                            <label class="form-label fw-semibold text-title mb-2">
+                                <i class="bi bi-diagram-3 me-1 text-primary"></i>Position Level
+                                <span class="text-danger">*</span>
                             </label>
-                            <select class="form-select" @bind="reqDto.PositionId" disabled="@(userPositionId != 0)">
+                            <select class="form-select border-custom @(reqDto.PositionId == 0 && hasAttemptedSubmit ? "is-invalid" : "")" 
+                                    @bind="reqDto.PositionId" disabled="@(userPositionId != 0)">
                                 <option value="0">-- Select Position --</option>
                                 @foreach(var p in positions) 
                                 { 
                                     <option value="@p.Id">@p.PositionLevel</option> 
                                 }
                             </select>
+                            @if (hasAttemptedSubmit && reqDto.PositionId == 0)
+                            {
+                                <div class="invalid-feedback d-block">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Position level is required
+                                </div>
+                            }
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">
-                                <i class="bi bi-palette me-1" style="color: #0ea5e9;"></i>Theme
+                            <label class="form-label fw-semibold text-title mb-2">
+                                <i class="bi bi-palette me-1 text-primary"></i>Theme
                             </label>
-                            <input type="text" class="form-control" @bind="reqDto.Theme" 
-                                   placeholder="Pengajuan Barang" style="font-size: 0.95rem;" />
+                            <input type="text" class="form-control border-custom" @bind="reqDto.Theme" 
+                                   placeholder="Pengajuan Barang" />
+                            <small class="text-muted">Optional theme or category</small>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Survey Items Card -->
-            <div class="card border-0 shadow-sm rounded-3 mb-3">
-                <div class="card-header text-white py-2 px-3 d-flex justify-content-between align-items-center" style="background: #64748b;">
-                    <h6 class="mb-0 fw-semibold">
-                        <i class="bi bi-list-check me-2"></i>Survey Pengajuan
-                    </h6>
-                    <button class="btn btn-sm text-dark px-3" @onclick="PrepareNewItem"
-                            style="background: white; border: none; font-weight: 600;">
-                        <i class="bi bi-plus-circle me-1"></i>Add Item
-                    </button>
+            <!-- Survey Items Card (Collapsible) -->
+            <div class="card border-custom shadow-sm rounded-3 mb-4 bg-card">
+                <div class="card-header py-3 px-4 border-bottom border-custom bg-card" 
+                     style="cursor: pointer;" 
+                     data-bs-toggle="collapse" 
+                     data-bs-target="#surveyItemsCollapse" 
+                     aria-expanded="true" 
+                     aria-controls="surveyItemsCollapse">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-semibold text-title">
+                            <i class="bi bi-list-check me-2 text-primary"></i>Survey Pengajuan
+                            <span class="badge bg-primary ms-2">@reqDto.Items.Count Items</span>
+                        </h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-primary px-3" @onclick:stopPropagation @onclick="PrepareNewItem">
+                                <i class="bi bi-plus-circle me-1"></i>Add Item
+                            </button>
+                            <i class="bi bi-chevron-down text-primary fs-5"></i>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
-                            <thead style="background: #f8f9fa;">
-                                <tr>
-                                    <th class="py-3 px-3 fw-semibold text-dark" style="width: 120px;">Action</th>
-                                    <th class="py-3 px-3 fw-semibold text-dark text-start">Question</th>
-                                    <th class="py-3 px-3 fw-semibold text-dark" style="width: 150px;">Type</th>
-                                    <th class="py-3 px-3 fw-semibold text-dark" style="width: 120px;">Order</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if (reqDto.Items.Count == 0)
-                                {
+                <div class="collapse show" id="surveyItemsCollapse">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-main">
                                     <tr>
-                                        <td colspan="4" class="text-center py-5 text-muted">
-                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                            <p class="mb-0">No items added yet</p>
-                                        </td>
+                                        <th class="py-3 px-3 fw-semibold text-title" style="width: 80px;">No</th>
+                                        <th class="py-3 px-3 fw-semibold text-title">Question</th>
+                                        <th class="py-3 px-3 fw-semibold text-title" style="width: 150px;">Type</th>
+                                        <th class="py-3 px-3 fw-semibold text-title text-center" style="width: 200px;">Actions</th>
                                     </tr>
-                                }
-                                else
-                                {
-                                    @foreach (var item in reqDto.Items.OrderBy(x => x.OrderNo))
+                                </thead>
+                                <tbody>
+                                    @if (reqDto.Items.Count == 0)
                                     {
                                         <tr>
-                                            <td class="px-3 py-3">
-                                                <button class="btn btn-sm me-1 text-white" @onclick="() => EditItem(item)"
-                                                        style="background: #0ea5e9; border: none;">
-                                                    <i class="bi bi-pencil"></i>
+                                            <td colspan="4" class="text-center py-5 text-muted">
+                                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                                <p class="mb-2">No items added yet</p>
+                                                <button class="btn btn-sm btn-primary" @onclick="PrepareNewItem">
+                                                    <i class="bi bi-plus-circle me-1"></i>Add Your First Item
                                                 </button>
-                                                <button class="btn btn-sm text-white" @onclick="() => RemoveItem(item)"
-                                                        style="background: #ef4444; border: none;">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </td>
-                                            <td class="px-3 py-3 text-start">@item.Question</td>
-                                            <td class="px-3 py-3">
-                                                <span class="badge rounded-pill" style="background: #0ea5e9;">@item.Type</span>
-                                            </td>
-                                            <td class="px-3 py-3">
-                                                <div class="btn-group btn-group-sm">
-                                                    <button class="btn text-white" @onclick="() => MoveUp(item)" 
-                                                            disabled="@(reqDto.Items.OrderBy(x => x.OrderNo).FirstOrDefault() == item)"
-                                                            style="background: #0ea5e9; border: none;">
-                                                        <i class="bi bi-chevron-up"></i>
-                                                    </button>
-                                                    <button class="btn text-white" @onclick="() => MoveDown(item)" 
-                                                            disabled="@(reqDto.Items.OrderBy(x => x.OrderNo).LastOrDefault() == item)"
-                                                            style="background: #0ea5e9; border: none;">
-                                                        <i class="bi bi-chevron-down"></i>
-                                                    </button>
-                                                </div>
                                             </td>
                                         </tr>
                                     }
-                                }
-                            </tbody>
-                        </table>
+                                    else
+                                    {
+                                        @foreach (var (item, index) in reqDto.Items.OrderBy(x => x.OrderNo).Select((item, index) => (item, index)))
+                                        {
+                                            var itemId = $"checkboxOptions_{index}";
+                                            <tr>
+                                                <td class="px-3 py-3 text-center">
+                                                    <span class="badge bg-primary rounded-circle" style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;">
+                                                        @(index + 1)
+                                                    </span>
+                                                </td>
+                                                <td class="px-3 py-3 text-body">
+                                                    <div class="fw-semibold">@item.Question</div>
+                                                    @if (item.Type == QuestionType.CheckBox && item.ItemDetails.Any())
+                                                    {
+                                                        <div class="mt-2">
+                                                            <button class="btn btn-sm btn-outline-primary border-custom d-flex align-items-center gap-2" 
+                                                                    type="button" 
+                                                                    data-bs-toggle="collapse" 
+                                                                    data-bs-target="#@itemId" 
+                                                                    aria-expanded="false" 
+                                                                    aria-controls="@itemId">
+                                                                <i class="bi bi-list-ul text-primary"></i>
+                                                                <span>View @item.ItemDetails.Count option(s)</span>
+                                                                <i class="bi bi-chevron-down"></i>
+                                                            </button>
+                                                            <div class="collapse mt-2" id="@itemId">
+                                                                <div class="p-2 bg-main rounded-3 border border-custom">
+                                                                    @foreach (var option in item.ItemDetails)
+                                                                    {
+                                                                        <div class="d-flex align-items-center gap-2 py-1">
+                                                                            <i class="bi bi-check-circle-fill text-primary" style="font-size: 0.85rem;"></i>
+                                                                            <small class="text-body">@option.Item</small>
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </td>
+                                                <td class="px-3 py-3">
+                                                    <span class="badge bg-primary rounded-pill">@item.Type</span>
+                                                </td>
+                                                <td class="px-3 py-3 text-center">
+                                                    <div class="btn-group btn-group-sm me-2">
+                                                        <button class="btn btn-outline-primary border-custom" 
+                                                                @onclick="() => MoveUp(item)" 
+                                                                disabled="@(index == 0)"
+                                                                title="Move Up">
+                                                            <i class="bi bi-chevron-up"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-primary border-custom" 
+                                                                @onclick="() => MoveDown(item)" 
+                                                                disabled="@(index == reqDto.Items.Count - 1)"
+                                                                title="Move Down">
+                                                            <i class="bi bi-chevron-down"></i>
+                                                        </button>
+                                                    </div>
+                                                    <button class="btn btn-sm btn-primary me-1" @onclick="() => EditItem(item)">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger-custom" @onclick="() => ShowRemoveItemConfirmation(item)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                                <tfoot class="bg-main">
+                                    <tr>
+                                        <td colspan="4" class="text-center py-3">
+                                            <button class="btn btn-primary px-4" @onclick="PrepareNewItem">
+                                                <i class="bi bi-plus-circle me-2"></i>Add New Item
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Action Buttons -->
             <div class="d-flex gap-2 flex-wrap">
-                <button class="btn text-white px-4 shadow-sm" @onclick="SaveAll"
-                        style="background: #10b981; border: none;">
-                    <i class="bi bi-check-circle me-2"></i>Submit
+                <button class="btn btn-success-custom px-4 py-2 shadow-sm" @onclick="ShowSubmitConfirmation">
+                    <i class="bi bi-check-circle me-2"></i>@(isEditMode ? "Update" : "Submit")
                 </button>
-                <button class="btn text-white px-3 shadow-sm" @onclick="ResetForm"
-                        style="background: #0ea5e9; border: none;">
+                <button class="btn btn-primary px-4 py-2 shadow-sm" @onclick="ResetForm">
                     <i class="bi bi-file-earmark-plus me-2"></i>New
                 </button>
                 @if (isEditMode)
                 {
-                    <button class="btn text-white px-3 shadow-sm" @onclick="DeleteCurrentTemplate"
-                            style="background: #ef4444; border: none;">
+                    <button class="btn btn-danger-custom px-4 py-2 shadow-sm" @onclick="ShowDeleteConfirmation">
                         <i class="bi bi-trash me-2"></i>Delete
                     </button>
                 }
-                <button class="btn btn-outline-secondary px-3 ms-auto" @onclick='() => NavigationManager.NavigateTo("/templates")'>
+                <button class="btn btn-outline-secondary px-4 py-2 ms-auto border-custom" 
+                        @onclick='() => NavigationManager.NavigateTo("/templates")'>
                     <i class="bi bi-x-circle me-2"></i>Cancel
                 </button>
             </div>
@@ -190,129 +282,306 @@
 </div>
 
 <!-- Item Modal -->
-@if (showItemModal)
-{
-    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6);">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-3">
-                <div class="modal-header text-white py-2 px-3" style="background: #0ea5e9;">
-                    <h6 class="modal-title fw-semibold mb-0">
-                        <i class="bi bi-file-earmark-text me-2"></i>
-                        @(isEditItem ? "Edit Survey Item" : "Add New Item")
-                    </h6>
-                    <button type="button" class="btn-close btn-close-white" @onclick="() => showItemModal = false"></button>
-                </div>
-                <div class="modal-body p-3">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Question / Label</label>
-                        <input type="text" class="form-control" @bind="currentItem.Question" 
-                               placeholder="Enter question here..." style="font-size: 0.95rem;" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Answer Type</label>
-                        <select class="form-select" @bind="currentItem.Type" style="font-size: 0.95rem;">
-                            @foreach (var type in Enum.GetValues<QuestionType>())
-                            {
-                                <option value="@type">@type</option>
-                            }
-                        </select>
-                    </div>
-
-                    @if (currentItem.Type == QuestionType.CheckBox)
+<div class="modal fade @(showItemModal ? "show" : "")" tabindex="-1" 
+     style="display: @(showItemModal ? "block" : "none");">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header bg-primary text-white border-0">
+                <h5 class="modal-title fw-semibold">
+                    <i class="bi bi-file-earmark-text me-2"></i>
+                    @(isEditItem ? "Edit Survey Item" : "Add New Item")
+                </h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="CloseItemModal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-title mb-2">
+                        Question / Label <span class="text-danger">*</span>
+                    </label>
+                    <textarea class="form-control border-custom @(itemModalAttemptedSave && string.IsNullOrWhiteSpace(currentItem.Question) ? "is-invalid" : "")" 
+                              @bind="currentItem.Question" 
+                              rows="3"
+                              placeholder="Enter your question here..."></textarea>
+                    @if (itemModalAttemptedSave && string.IsNullOrWhiteSpace(currentItem.Question))
                     {
-                        <div class="p-3 border rounded-3 bg-light">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label fw-semibold text-dark mb-0" style="font-size: 0.9rem;">Options List</label>
-                                <button class="btn btn-sm text-white px-3" @onclick="AddDetailRow"
-                                        style="background: #64748b; border: none;">
-                                    <i class="bi bi-plus me-1"></i>Add
-                                </button>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover align-middle bg-white rounded mb-0" style="font-size: 0.9rem;">
-                                    <thead style="background: #f8f9fa;">
-                                        <tr>
-                                            <th class="ps-3 py-2 fw-semibold">Option Label</th>
-                                            <th style="width: 50px;"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var det in currentItem.ItemDetails)
-                                        {
-                                            <tr>
-                                                <td class="ps-3">
-                                                    <input type="text" class="form-control form-control-sm" 
-                                                           @bind="det.Item" placeholder="Enter option label..." />
-                                                </td>
-                                                <td class="text-center">
-                                                    <button class="btn btn-sm" @onclick="() => currentItem.ItemDetails.Remove(det)"
-                                                            style="color: #ef4444;">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div class="invalid-feedback d-block">
+                            <i class="bi bi-exclamation-circle me-1"></i>Question is required
                         </div>
                     }
                 </div>
-                <div class="modal-footer bg-light py-2 px-3">
-                    <button class="btn btn-outline-secondary px-3" @onclick="() => showItemModal = false">Cancel</button>
-                    <button class="btn text-white px-4" @onclick="SaveItemToTable"
-                            style="background: #0ea5e9; border: none;">
-                        Save Item
-                    </button>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-title mb-2">
+                        Answer Type <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select border-custom" @bind="currentItem.Type" @bind:after="OnTypeChanged">
+                        @foreach (var type in Enum.GetValues<QuestionType>())
+                        {
+                            <option value="@type">@GetQuestionTypeDisplay(type)</option>
+                        }
+                    </select>
+                    <small class="text-muted">
+                        @GetQuestionTypeDescription(currentItem.Type)
+                    </small>
                 </div>
+
+                @if (currentItem.Type == QuestionType.CheckBox)
+                {
+                    <div class="card border-custom bg-main">
+                        <div class="card-header bg-main border-bottom border-custom py-2 px-3"
+                             style="cursor: pointer;"
+                             data-bs-toggle="collapse"
+                             data-bs-target="#checkboxOptionsCollapse"
+                             aria-expanded="true"
+                             aria-controls="checkboxOptionsCollapse">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <label class="form-label fw-semibold text-title mb-0">
+                                    <i class="bi bi-list-ul me-1 text-primary"></i>Checkbox Options
+                                    @if (currentItem.ItemDetails.Any())
+                                    {
+                                        <span class="badge bg-primary ms-2">@currentItem.ItemDetails.Count option(s)</span>
+                                    }
+                                </label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button class="btn btn-sm btn-primary px-3" type="button" @onclick:stopPropagation @onclick="AddDetailRow">
+                                        <i class="bi bi-plus me-1"></i>Add Option
+                                    </button>
+                                    <i class="bi bi-chevron-down text-primary"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="collapse show" id="checkboxOptionsCollapse">
+                            <div class="card-body p-3">
+                                @if (!currentItem.ItemDetails.Any())
+                                {
+                                    <div class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                        <p class="mb-2 small">No options added yet</p>
+                                        <button class="btn btn-sm btn-primary" type="button" @onclick="AddDetailRow">
+                                            <i class="bi bi-plus-circle me-1"></i>Add First Option
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="list-group list-group-flush">
+                                        @foreach (var (det, idx) in currentItem.ItemDetails.Select((d, i) => (d, i)))
+                                        {
+                                            <div class="list-group-item bg-transparent border-0 px-0 py-2">
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-card border-custom">
+                                                        <i class="bi bi-check-square text-primary"></i>
+                                                    </span>
+                                                    <input type="text" 
+                                                           class="form-control border-custom" 
+                                                           @bind="det.Item" 
+                                                           placeholder="@($"Option {idx + 1}")" />
+                                                    <button class="btn btn-outline-danger border-custom" 
+                                                            type="button"
+                                                            @onclick="() => RemoveDetailRow(det)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="text-center mt-3">
+                                        <button class="btn btn-sm btn-primary px-4" type="button" @onclick="AddDetailRow">
+                                            <i class="bi bi-plus-circle me-2"></i>Add Another Option
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer border-0 bg-main">
+                <button class="btn btn-outline-secondary border-custom px-4" @onclick="CloseItemModal">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button class="btn btn-primary px-4" @onclick="SaveItemToTable">
+                    <i class="bi bi-check-circle me-1"></i>Save Item
+                </button>
             </div>
         </div>
     </div>
-}
+</div>
 
 <!-- Lookup Modal -->
-@if (showLookupModal)
-{
-    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6);">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-3">
-                <div class="modal-header text-white py-2 px-3" style="background: #64748b;">
-                    <h6 class="modal-title fw-semibold mb-0">
-                        <i class="bi bi-search me-2"></i>Select Template
-                    </h6>
-                    <button type="button" class="btn-close btn-close-white" @onclick="() => showLookupModal = false"></button>
+<div class="modal fade @(showLookupModal ? "show" : "")" tabindex="-1" 
+     style="display: @(showLookupModal ? "block" : "none");">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header text-white border-0" style="background-color: var(--bs-secondary);">
+                <h5 class="modal-title fw-semibold">
+                    <i class="bi bi-search me-2"></i>Select Template to Edit
+                </h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => showLookupModal = false"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-main border-custom">
+                        <i class="bi bi-funnel text-primary"></i>
+                    </span>
+                    <input type="text" class="form-control border-custom" 
+                           placeholder="Search template name..." 
+                           @bind="searchQuery" @bind:event="oninput" />
                 </div>
-                <div class="modal-body p-3">
-                    <div class="input-group mb-3">
-                        <span class="input-group-text bg-light">
-                            <i class="bi bi-funnel" style="color: #0ea5e9;"></i>
-                        </span>
-                        <input type="text" class="form-control" placeholder="Search template name..." 
-                               @bind="searchQuery" @bind:event="oninput" style="font-size: 0.95rem;" />
-                    </div>
-                    <div class="table-responsive" style="max-height: 400px;">
-                        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
-                            <thead class="table-light">
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-main sticky-top">
+                            <tr>
+                                <th class="fw-semibold text-title ps-3">ID</th>
+                                <th class="fw-semibold text-title">Template Name</th>
+                                <th class="fw-semibold text-title text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var filtered = allTemplates.Where(x => x.TemplateName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
+                            }
+                            @if (!filtered.Any())
+                            {
                                 <tr>
-                                    <th class="fw-semibold ps-3">ID</th>
-                                    <th class="fw-semibold">Template Name</th>
+                                    <td colspan="3" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        <p class="mb-0">No templates found</p>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var t in allTemplates.Where(x => x.TemplateName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)))
+                            }
+                            else
+                            {
+                                @foreach (var t in filtered)
                                 {
-                                    <tr style="cursor: pointer;" @onclick="() => SelectTemplate(t.Id)">
-                                        <td class="ps-3 fw-semibold" style="color: #0ea5e9;">@t.Id</td>
-                                        <td>@t.TemplateName</td>
+                                    <tr>
+                                        <td class="ps-3 fw-semibold text-primary">@t.Id</td>
+                                        <td class="text-body">@t.TemplateName</td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-primary px-3" @onclick="() => SelectTemplate(t.Id)">
+                                                <i class="bi bi-pencil-square me-1"></i>Edit
+                                            </button>
+                                        </td>
                                     </tr>
                                 }
-                            </tbody>
-                        </table>
-                    </div>
+                            }
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Submit Confirmation Modal -->
+<div class="modal fade @(showSubmitModal ? "show" : "")" tabindex="-1" 
+     style="display: @(showSubmitModal ? "block" : "none");">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-title">
+                    <i class="bi bi-question-circle text-primary me-2"></i>Confirm @(isEditMode ? "Update" : "Submission")
+                </h5>
+                <button type="button" class="btn-close" @onclick="() => showSubmitModal = false"></button>
+            </div>
+            <div class="modal-body text-body">
+                <p class="mb-0">Are you sure you want to @(isEditMode ? "update" : "create") this template?</p>
+                <div class="bg-main rounded-3 p-3 mt-3">
+                    <small class="text-muted d-block mb-1">Template Details:</small>
+                    <ul class="list-unstyled mb-0 small">
+                        <li><strong>ID:</strong> @reqDto.Id</li>
+                        <li><strong>Name:</strong> @reqDto.TemplateName</li>
+                        <li><strong>Position:</strong> @(positions.FirstOrDefault(p => p.Id == reqDto.PositionId)?.PositionLevel ?? "-")</li>
+                        <li><strong>Items:</strong> @reqDto.Items.Count item(s)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary border-custom" @onclick="() => showSubmitModal = false">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success-custom" @onclick="SaveAll">
+                    <i class="bi bi-check-circle me-1"></i>Yes, @(isEditMode ? "Update" : "Submit")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade @(showDeleteModal ? "show" : "")" tabindex="-1" 
+     style="display: @(showDeleteModal ? "block" : "none");">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-title">
+                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close" @onclick="() => showDeleteModal = false"></button>
+            </div>
+            <div class="modal-body text-body">
+                <p class="mb-2">Are you sure you want to delete this template?</p>
+                <div class="alert alert-danger border-0 mb-0">
+                    <small><i class="bi bi-info-circle me-1"></i>This action cannot be undone!</small>
+                </div>
+                <div class="bg-main rounded-3 p-3 mt-3">
+                    <small class="text-muted d-block mb-1">Template to be deleted:</small>
+                    <ul class="list-unstyled mb-0 small">
+                        <li><strong>ID:</strong> @reqDto.Id</li>
+                        <li><strong>Name:</strong> @reqDto.TemplateName</li>
+                        <li><strong>Items:</strong> @reqDto.Items.Count item(s) will be deleted</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary border-custom" @onclick="() => showDeleteModal = false">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger-custom" @onclick="DeleteCurrentTemplate">
+                    <i class="bi bi-trash me-1"></i>Yes, Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Remove Item Confirmation Modal -->
+<div class="modal fade @(showRemoveItemModal ? "show" : "")" tabindex="-1" 
+     style="display: @(showRemoveItemModal ? "block" : "none");">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-title">
+                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>Remove Item
+                </h5>
+                <button type="button" class="btn-close" @onclick="() => showRemoveItemModal = false"></button>
+            </div>
+            <div class="modal-body text-body">
+                <p class="mb-2">Are you sure you want to remove this survey item?</p>
+                @if (itemToRemove != null)
+                {
+                    <div class="bg-main rounded-3 p-3">
+                        <small class="text-muted d-block mb-1">Item:</small>
+                        <p class="mb-0 small"><strong>@itemToRemove.Question</strong></p>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary border-custom" @onclick="() => showRemoveItemModal = false">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger-custom" @onclick="ConfirmRemoveItem">
+                    <i class="bi bi-trash me-1"></i>Yes, Remove
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Backdrop -->
+@if (showItemModal || showLookupModal || showSubmitModal || showDeleteModal || showRemoveItemModal)
+{
+    <div class="modal-backdrop fade show"></div>
 }
 
 @code {
@@ -320,10 +589,22 @@
     private List<PositionResponseDTO> positions = new();
     private List<TemplateHeaderResponseDTO> allTemplates = new();
     private TemplateItemRequestDTO currentItem = new();
-    private TemplateItemRequestDTO _editingItemReference = new();
-    private bool isEditItem = false, isEditMode = false;
-    private bool showItemModal = false, showLookupModal = false;
+    private TemplateItemRequestDTO? _editingItemReference = null;
+    private TemplateItemRequestDTO? itemToRemove = null;
+    
+    private bool isEditItem = false;
+    private bool isEditMode = false;
+    private bool showItemModal = false;
+    private bool showLookupModal = false;
+    private bool showSubmitModal = false;
+    private bool showDeleteModal = false;
+    private bool showRemoveItemModal = false;
+    private bool hasAttemptedSubmit = false;
+    private bool itemModalAttemptedSave = false;
+    
     private string searchQuery = "";
+    private string? alertMessage;
+    private string? successMessage;
     private int userPositionId = 0;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -380,7 +661,34 @@
         }
     }
 
+    private string GetValidationClass(string? value) => 
+        hasAttemptedSubmit && string.IsNullOrWhiteSpace(value) ? "is-invalid" : "";
+
+    private string GetQuestionTypeDisplay(QuestionType type) => type switch
+    {
+        QuestionType.TextBox => "Text Box",
+        QuestionType.TextArea => "Text Area",
+        QuestionType.Number => "Number",
+        QuestionType.CheckBox => "Checkbox",
+        _ => type.ToString()
+    };
+
+    private string GetQuestionTypeDescription(QuestionType type) => type switch
+    {
+        QuestionType.TextBox => "Single line text response",
+        QuestionType.TextArea => "Multi-line text response for longer answers",
+        QuestionType.Number => "Numeric value only",
+        QuestionType.CheckBox => "Multiple options selection with checkboxes",
+        _ => ""
+    };
+
     private async Task GenerateNewId() => reqDto.Id = await IdGeneratorUtil.GenerateTemplateId(DbContext);
+
+    private void OpenLookupModal()
+    {
+        showLookupModal = true;
+        searchQuery = "";
+    }
 
     private async Task SelectTemplate(string id)
     {
@@ -411,13 +719,40 @@
     private void PrepareNewItem()
     {
         isEditItem = false;
-        currentItem = new TemplateItemRequestDTO { Type = QuestionType.TextBox, ItemDetails = new() };
+        itemModalAttemptedSave = false;
+        currentItem = new TemplateItemRequestDTO { 
+            Type = QuestionType.TextBox, 
+            ItemDetails = new() 
+        };
         showItemModal = true;
+    }
+
+    private void OnTypeChanged()
+    {
+        if (currentItem.Type == QuestionType.CheckBox)
+        {
+            if (!currentItem.ItemDetails.Any())
+            {
+                AddDetailRow();
+            }
+        }
     }
 
     private void SaveItemToTable()
     {
-        if (string.IsNullOrWhiteSpace(currentItem.Question)) return;
+        itemModalAttemptedSave = true;
+        
+        if (string.IsNullOrWhiteSpace(currentItem.Question))
+        {
+            alertMessage = "Please enter a question before saving.";
+            return;
+        }
+
+        if (currentItem.Type == QuestionType.CheckBox && !currentItem.ItemDetails.Any())
+        {
+            alertMessage = "Please add at least one option for checkbox type.";
+            return;
+        }
 
         if (isEditItem && _editingItemReference != null)
         {
@@ -430,19 +765,31 @@
             currentItem.OrderNo = reqDto.Items.Any() ? reqDto.Items.Max(x => x.OrderNo) + 1 : 1;
             reqDto.Items.Add(currentItem);
         }
+        
+        CloseItemModal();
+    }
+
+    private void CloseItemModal()
+    {
         showItemModal = false;
+        itemModalAttemptedSave = false;
+        alertMessage = null;
     }
 
     private void EditItem(TemplateItemRequestDTO item) 
     { 
-        isEditItem = true; 
+        isEditItem = true;
+        itemModalAttemptedSave = false;
         currentItem = new TemplateItemRequestDTO 
         {
             Id = item.Id,
             Question = item.Question,
             Type = item.Type,
             OrderNo = item.OrderNo,
-            ItemDetails = item.ItemDetails.Select(d => new TemplateItemDetailRequestDTO { Id = d.Id, Item = d.Item }).ToList()
+            ItemDetails = item.ItemDetails.Select(d => new TemplateItemDetailRequestDTO { 
+                Id = d.Id, 
+                Item = d.Item 
+            }).ToList()
         };
         _editingItemReference = item; 
         showItemModal = true; 
@@ -474,56 +821,110 @@
         }
     }
 
-    private void RemoveItem(TemplateItemRequestDTO item) => reqDto.Items.Remove(item);
+    private void ShowRemoveItemConfirmation(TemplateItemRequestDTO item)
+    {
+        itemToRemove = item;
+        showRemoveItemModal = true;
+    }
+
+    private void ConfirmRemoveItem()
+    {
+        if (itemToRemove != null)
+        {
+            reqDto.Items.Remove(itemToRemove);
+            itemToRemove = null;
+        }
+        showRemoveItemModal = false;
+    }
+
     private void AddDetailRow() => currentItem.ItemDetails.Add(new TemplateItemDetailRequestDTO());
+    
+    private void RemoveDetailRow(TemplateItemDetailRequestDTO det) => currentItem.ItemDetails.Remove(det);
+
+    private void ShowSubmitConfirmation()
+    {
+        hasAttemptedSubmit = true;
+        alertMessage = null;
+
+        if (string.IsNullOrWhiteSpace(reqDto.TemplateName) || reqDto.PositionId == 0)
+        {
+            alertMessage = "Please complete all required fields before submitting.";
+            return;
+        }
+
+        if (!reqDto.Items.Any())
+        {
+            alertMessage = "Please add at least one survey item before submitting.";
+            return;
+        }
+
+        showSubmitModal = true;
+    }
 
     private async Task SaveAll()
     {
+        showSubmitModal = false;
+        alertMessage = null;
+        successMessage = null;
+
         try 
         {
             if (isEditMode) 
             {
                 await TemplateService.UpdateTemplate(reqDto.Id!, reqDto);
+                successMessage = "Template updated successfully!";
             }
             else 
             {
                 await TemplateService.CreateTemplate(reqDto);
+                successMessage = "Template created successfully!";
             }
             
             NavigationManager.NavigateTo("/templates");
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            alertMessage = "Error: " + ex.Message;
         }
+    }
+
+    private void ShowDeleteConfirmation()
+    {
+        showDeleteModal = true;
     }
 
     private async Task DeleteCurrentTemplate()
     {
-        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete template {reqDto.Id}?");
+        showDeleteModal = false;
 
-        if (confirmed)
+        try 
         {
-            try 
+            var success = await TemplateService.DeleteTemplate(reqDto.Id!);
+            if (success)
             {
-                var success = await TemplateService.DeleteTemplate(reqDto.Id!);
-                if (success)
-                {
-                    NavigationManager.NavigateTo("/templates");
-                }
+                successMessage = "Template deleted successfully!";
+                NavigationManager.NavigateTo("/templates");
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine($"Error: {ex.Message}");
+                alertMessage = "Failed to delete template.";
             }
+        }
+        catch (Exception ex)
+        {
+            alertMessage = "Error: " + ex.Message;
         }
     }
 
     private async Task ResetForm()
     {
         isEditMode = false;
+        hasAttemptedSubmit = false;
+        alertMessage = null;
+        successMessage = null;
         reqDto = new() { Items = new() };
+        reqDto.PositionId = userPositionId;
         await GenerateNewId();
-        NavigationManager.NavigateTo("/templates/form");
+        NavigationManager.NavigateTo("/templates/form", true);
     }
 }

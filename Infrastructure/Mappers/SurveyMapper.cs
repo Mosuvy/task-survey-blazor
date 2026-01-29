@@ -27,6 +27,7 @@ namespace TaskSurvey.Infrastructure.Mappers
                 { 
                     Id = entity.Requester.Id, 
                     PositionName = entity.Requester.PositionName,
+                    PositionId = entity.Requester.PositionId,
                     Username = entity.Requester.Username 
                 } : null,
 

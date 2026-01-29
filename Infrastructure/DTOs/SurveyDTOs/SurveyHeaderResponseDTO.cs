@@ -15,10 +15,10 @@ namespace TaskSurvey.Infrastructure.DTOs.SurveyDTOs
         public string DocumentId { get; set; } = null!;
         [Required]
         public string RequesterId { get; set; } = null!;
-        public virtual UserResponseDTO? Requester { get; set; }
+        public UserResponseDTO? Requester { get; set; }
         public required string Status { get; set; }
         public string? TemplateHeaderId { get; set; }
-        public virtual TemplateHeaderResponseDTO? Header { get; set; }
+        public TemplateHeaderResponseDTO? Header { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public DateTime UpdatedAtTemplate { get; set; }

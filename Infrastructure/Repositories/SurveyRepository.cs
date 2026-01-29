@@ -35,6 +35,7 @@ namespace TaskSurvey.Infrastructure.Repositories
         {
             using var context = await _contextFactory.CreateDbContextAsync();
             return await context.DocumentSurveys
+                .AsNoTracking()
                 .Include(ds => ds.Requester)
                 .Include(ds => ds.Header)
                 .Include(ds => ds.SurveyItems!.OrderBy(i => i.OrderNo))
@@ -47,6 +48,7 @@ namespace TaskSurvey.Infrastructure.Repositories
             using var context = await _contextFactory.CreateDbContextAsync();
             return await context.DocumentSurveys
                 .Where(ds => ds.RequesterId == id)
+                .Include(ds => ds.Requester)
                 .Include(ds => ds.Header)
                 .OrderByDescending(ds => ds.CreatedAt)
                 .ToListAsync();
@@ -70,9 +72,11 @@ namespace TaskSurvey.Infrastructure.Repositories
             if (!Enum.TryParse<StatusType>(status, true, out var statusEnum)) return null;
 
             return await context.DocumentSurveys
-                .Where(ds => ds.RequesterId == id && (ds.Status == statusEnum || ds.Status == StatusType.Confirmed || ds.Status == StatusType.Rejected))
+                .AsNoTracking()
                 .Include(ds => ds.Requester)
                 .Include(ds => ds.Header)
+                .Where(ds => ds.RequesterId == id && 
+                            (ds.Status == statusEnum || ds.Status == StatusType.Confirmed || ds.Status == StatusType.Rejected))
                 .ToListAsync();
         }
 

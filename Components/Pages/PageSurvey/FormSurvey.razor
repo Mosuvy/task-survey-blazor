@@ -1,5 +1,7 @@
 @page "/surveys/form"
 @using Microsoft.AspNetCore.WebUtilities
+@using System.Text.Json
+@using TaskSurvey.Infrastructure.Models
 @layout MainLayout
 @rendermode InteractiveServer
 @inject ISurveyService SurveyService
@@ -12,30 +14,45 @@
 @using TaskSurvey.Infrastructure.DTOs.SurveyDTOs
 @using TaskSurvey.Infrastructure.DTOs.TemplateDTOs
 @using TaskSurvey.Infrastructure.DTOs.UserDTOs
-@using TaskSurvey.Infrastructure.Models
+@using TaskSurvey.Infrastructure.Mappers
 @using TaskSurvey.Infrastructure.Utils
 
 <PageTitle>Survey Form</PageTitle>
 
-<div class="container mt-4 mb-5">
+<div class="container-fluid px-4 py-4 bg-main" style="min-height: 100vh;">
     <div class="row justify-content-center">
-        <div class="col-lg-11">
+        <div class="col-lg-10">
             <!-- Header -->
-            <div class="mb-3">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                    <div class="text-white p-2 rounded" style="background: #0ea5e9;">
-                        <i class="bi bi-clipboard-check fs-5"></i>
+            <div class="mb-4">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="bg-primary text-white p-3 rounded-3 shadow-sm">
+                        <i class="bi bi-clipboard-check fs-4"></i>
                     </div>
                     <div>
-                        <h4 class="mb-0 fw-bold text-dark">
-                            @GetPageTitle()
-                        </h4>
-                        <p class="text-muted mb-0" style="font-size: 0.85rem;">
-                            @GetPageSubtitle()
-                        </p>
+                        <h3 class="mb-1 fw-bold text-title">@GetPageTitle()</h3>
+                        <p class="text-muted mb-0" style="font-size: 0.9rem;">@GetPageSubtitle()</p>
                     </div>
                 </div>
             </div>
+
+            <!-- Alerts -->
+            @if (!string.IsNullOrEmpty(alertMessage))
+            {
+                <div class="alert alert-danger border-0 shadow-sm mb-3 alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Error!</strong> @alertMessage
+                    <button type="button" class="btn-close" @onclick="() => alertMessage = null"></button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success border-0 shadow-sm mb-3 alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    <strong>Success!</strong> @successMessage
+                    <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+                </div>
+            }
 
             <!-- View Only Notice -->
             @if (isViewOnly && !isSupervisor)
@@ -48,7 +65,7 @@
                 </div>
             }
 
-            <!-- Template Update Warning (Only for User and Draft Status) -->
+            <!-- Template Update Warning -->
             @if (showTemplateUpdateWarning && !isSupervisor && reqDto.Status == StatusType.Draft && !isViewOnly)
             {
                 <div class="alert alert-warning border-0 shadow-sm mb-3 d-flex align-items-center justify-content-between" role="alert">
@@ -59,13 +76,13 @@
                             <span class="text-muted">Click the button to update to the latest version.</span>
                         </div>
                     </div>
-                    <button class="btn btn-sm btn-dark px-3" @onclick="() => showUpdateTemplateModal = true">
+                    <button class="btn btn-sm btn-warning px-3" @onclick="() => showUpdateTemplateModal = true">
                         <i class="bi bi-arrow-repeat me-1"></i>Update Template
                     </button>
                 </div>
             }
 
-            <!-- Supervisor View Only Notice -->
+            <!-- Supervisor View Notice -->
             @if (isSupervisor)
             {
                 <div class="alert alert-info border-0 shadow-sm mb-3 d-flex align-items-center" role="alert">
@@ -79,23 +96,23 @@
             <!-- Document Info Cards -->
             <div class="row g-3 mb-3">
                 <div class="col-md-3">
-                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                    <div class="card border-custom shadow-sm rounded-3 h-100 bg-card">
                         <div class="card-body p-3">
                             <p class="text-muted mb-1" style="font-size: 0.75rem;">DOCUMENT NO.</p>
-                            <h6 class="fw-bold mb-0" style="color: #0ea5e9;">@(reqDto.DocumentId ?? "GENERATING...")</h6>
+                            <h6 class="fw-bold mb-0 text-primary">@(reqDto.DocumentId ?? "GENERATING...")</h6>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                    <div class="card border-custom shadow-sm rounded-3 h-100 bg-card">
                         <div class="card-body p-3">
                             <p class="text-muted mb-1" style="font-size: 0.75rem;">DOCUMENT DATE</p>
-                            <h6 class="fw-bold mb-0">@DateTime.Now.ToString("dd MMM yyyy")</h6>
+                            <h6 class="fw-bold mb-0 text-body">@DateTime.Now.ToString("dd MMM yyyy")</h6>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                    <div class="card border-custom shadow-sm rounded-3 h-100 bg-card">
                         <div class="card-body p-3">
                             <p class="text-muted mb-1" style="font-size: 0.75rem;">STATUS</p>
                             <span class="badge rounded-pill @GetStatusBadgeClass(GetCurrentStatus())">
@@ -105,179 +122,224 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                    <div class="card border-custom shadow-sm rounded-3 h-100 bg-card">
                         <div class="card-body p-3">
                             <p class="text-muted mb-1" style="font-size: 0.75rem;">CREATED BY</p>
-                            <h6 class="fw-bold mb-0">@(requesterData != null ? requesterData.Username : "N/A")</h6>
+                            <h6 class="fw-bold mb-0 text-body">@(requesterData != null ? requesterData.Username : "N/A")</h6>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Requester Information -->
-            <div class="card border-0 shadow-sm rounded-3 mb-3">
-                <div class="card-header text-white py-2 px-3" style="background: #0ea5e9;">
+            <div class="card border-custom shadow-sm rounded-3 mb-3 bg-card">
+                <div class="card-header bg-primary text-white py-3 px-4 border-0">
                     <h6 class="mb-0 fw-semibold">
                         <i class="bi bi-person-badge me-2"></i>Requester Information
                     </h6>
                 </div>
-                <div class="card-body p-3">
+                <div class="card-body p-4">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Employee ID</label>
-                            <input type="text" class="form-control bg-light" value="@(requesterData != null ? requesterData.Id : "")" readonly style="font-size: 0.95rem;" />
+                            <label class="form-label fw-semibold text-title mb-2">Employee ID</label>
+                            <input type="text" class="form-control bg-main border-custom" value="@(requesterData != null ? requesterData.Id : "")" readonly />
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Employee Name</label>
-                            <input type="text" class="form-control bg-light" value="@(requesterData != null ? requesterData.Username : "")" readonly style="font-size: 0.95rem;" />
+                            <label class="form-label fw-semibold text-title mb-2">Employee Name</label>
+                            <input type="text" class="form-control bg-main border-custom" value="@(requesterData != null ? requesterData.Username : "")" readonly />
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Position Name</label>
-                            <input type="text" class="form-control bg-light" value="@(requesterData != null ? requesterData.PositionName : "")" readonly style="font-size: 0.95rem;" />
+                            <label class="form-label fw-semibold text-title mb-2">Position Name</label>
+                            <input type="text" class="form-control bg-main border-custom" value="@(requesterData != null ? requesterData.PositionName : "")" readonly />
                         </div>
                     </div>
                     <div class="row g-3 mt-1">
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Supervisor ID</label>
-                            <input type="text" class="form-control bg-light" value="@(requesterData?.Supervisor != null ? requesterData.Supervisor.Id : "-")" readonly style="font-size: 0.95rem;" />
+                            <label class="form-label fw-semibold text-title mb-2">Supervisor ID</label>
+                            <input type="text" class="form-control bg-main border-custom" value="@(requesterData?.Supervisor != null ? requesterData.Supervisor.Id : "-")" readonly />
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Supervisor Name</label>
-                            <input type="text" class="form-control bg-light" value="@(requesterData?.Supervisor != null ? requesterData.Supervisor.Username : "-")" readonly style="font-size: 0.95rem;" />
+                            <label class="form-label fw-semibold text-title mb-2">Supervisor Name</label>
+                            <input type="text" class="form-control bg-main border-custom" value="@(requesterData?.Supervisor != null ? requesterData.Supervisor.Username : "-")" readonly />
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Position Name</label>
-                            <input type="text" class="form-control bg-light" value="@(requesterData?.Supervisor != null ? requesterData.Supervisor.PositionName : "-")" readonly style="font-size: 0.95rem;" />
+                            <label class="form-label fw-semibold text-title mb-2">Position Name</label>
+                            <input type="text" class="form-control bg-main border-custom" value="@(requesterData?.Supervisor != null ? requesterData.Supervisor.PositionName : "-")" readonly />
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Survey Template Selection -->
-            <div class="card border-0 shadow-sm rounded-3 mb-3">
-                <div class="card-header text-white py-2 px-3" style="background: #64748b;">
+            <div class="card border-custom shadow-sm rounded-3 mb-3 bg-card">
+                <div class="card-header bg-secondary text-white py-3 px-4 border-0">
                     <h6 class="mb-0 fw-semibold">
                         <i class="bi bi-file-earmark-text me-2"></i>Survey Template
                     </h6>
                 </div>
-                <div class="card-body p-3">
+                <div class="card-body p-4">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Template ID</label>
+                            <label class="form-label fw-semibold text-title mb-2">
+                                Template ID <span class="text-danger">*</span>
+                            </label>
                             @if (isViewOnly || isSupervisor)
                             {
-                                <input type="text" class="form-control bg-light" value="@reqDto.TemplateHeaderId" readonly style="font-size: 0.95rem;" />
+                                <input type="text" class="form-control bg-main border-custom" value="@reqDto.TemplateHeaderId" readonly />
                             }
                             else
                             {
                                 <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0">
-                                        <i class="bi bi-fingerprint" style="color: #0ea5e9;"></i>
+                                    <span class="input-group-text bg-main border-custom">
+                                        <i class="bi bi-fingerprint text-primary"></i>
                                     </span>
-                                    <input type="text" class="form-control bg-light border-start-0" 
-                                           value="@reqDto.TemplateHeaderId" readonly style="font-size: 0.95rem;" />
-                                    <button class="btn text-white px-3" type="button" @onclick="() => showTemplateModal = true"
-                                            style="background: #0ea5e9; border: none;" disabled="@isViewOnly">
+                                    <input type="text" class="form-control bg-main border-custom @(hasAttemptedSubmit && string.IsNullOrEmpty(reqDto.TemplateHeaderId) ? "is-invalid" : "")" 
+                                           value="@reqDto.TemplateHeaderId" readonly />
+                                    <button class="btn btn-primary px-3" type="button" @onclick="() => showTemplateModal = true"
+                                            disabled="@isViewOnly">
                                         <i class="bi bi-search me-1"></i>Select
                                     </button>
                                 </div>
+                                @if (hasAttemptedSubmit && string.IsNullOrEmpty(reqDto.TemplateHeaderId))
+                                {
+                                    <div class="invalid-feedback d-block">
+                                        <i class="bi bi-exclamation-circle me-1"></i>Please select a template
+                                    </div>
+                                }
                             }
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Template Name</label>
-                            <input type="text" class="form-control bg-light" value="@selectedTemplateName" readonly style="font-size: 0.95rem;" />
+                            <label class="form-label fw-semibold text-title mb-2">Template Name</label>
+                            <input type="text" class="form-control bg-main border-custom" value="@selectedTemplateName" readonly />
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Template Theme</label>
-                            <input type="text" class="form-control bg-light" value="@selectedTemplateTheme" readonly style="font-size: 0.95rem;" />
+                            <label class="form-label fw-semibold text-title mb-2">Template Theme</label>
+                            <input type="text" class="form-control bg-main border-custom" value="@selectedTemplateTheme" readonly />
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Survey Items -->
-            <div class="card border-0 shadow-sm rounded-3 mb-3">
-                <div class="card-header text-white py-2 px-3" style="background: #64748b;">
-                    <h6 class="mb-0 fw-semibold">
-                        <i class="bi bi-list-check me-2"></i>Survey Pengajuan
-                    </h6>
+            <!-- Survey Items (Collapsible) -->
+            <div class="card border-custom shadow-sm rounded-3 mb-3 bg-card">
+                <div class="card-header py-3 px-4 border-bottom border-custom bg-card"
+                     style="cursor: pointer;"
+                     data-bs-toggle="collapse"
+                     data-bs-target="#surveyItemsCollapse"
+                     aria-expanded="true"
+                     aria-controls="surveyItemsCollapse">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-semibold text-title">
+                            <i class="bi bi-list-check me-2 text-primary"></i>Survey Pengajuan
+                            <span class="badge bg-primary ms-2">@reqDto.SurveyItems.Count Items</span>
+                        </h6>
+                        <i class="bi bi-chevron-down text-primary transition-icon"></i>
+                    </div>
                 </div>
-                <div class="card-body p-4">
-                    @if (reqDto.SurveyItems.Count == 0)
-                    {
-                        <div class="text-center py-5 text-muted">
-                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                            <p class="mb-0">Please select a template first</p>
-                        </div>
-                    }
-                    else
-                    {
-                        @foreach (var item in reqDto.SurveyItems.OrderBy(x => x.OrderNo))
+                <div class="collapse show" id="surveyItemsCollapse">
+                    <div class="card-body p-4">
+                        @if (reqDto.SurveyItems.Count == 0)
                         {
-                            <div class="mb-4">
-                                <label class="form-label fw-bold text-dark mb-3" style="font-size: 1rem;">
-                                    @item.OrderNo. @item.Question
-                                </label>
-                                
-                                @if (item.Type == QuestionType.TextBox)
-                                {
-                                    <input type="text" class="form-control @(isViewOnly ? "bg-light" : "")" 
-                                           value="@item.Answer" 
-                                           placeholder="Type your answer here..." 
-                                           readonly="@isViewOnly"
-                                           disabled="@(isViewOnly || isSupervisor)"
-                                           style="font-size: 0.95rem;" 
-                                           @onchange="@((ChangeEventArgs e) => {
-                                               if (!isViewOnly && !isSupervisor) item.Answer = e.Value?.ToString()!;
-                                           })" />
-                                }
-                                else if (item.Type == QuestionType.TextArea)
-                                {
-                                    <textarea class="form-control @(isViewOnly ? "bg-light" : "")" 
-                                              rows="4" 
-                                              placeholder="Type your answer here..." 
-                                              readonly="@isViewOnly"
-                                              disabled="@(isViewOnly || isSupervisor)"
-                                              style="font-size: 0.95rem;"
-                                              @onchange="@((ChangeEventArgs e) => {
-                                                  if (!isViewOnly && !isSupervisor) item.Answer = e.Value?.ToString()!;
-                                              })">@item.Answer</textarea>
-                                }
-                                else if (item.Type == QuestionType.Number)
-                                {
-                                    <input type="number" class="form-control @(isViewOnly ? "bg-light" : "")" 
-                                           value="@item.Answer" 
-                                           placeholder="Enter number..." 
-                                           readonly="@isViewOnly"
-                                           disabled="@(isViewOnly || isSupervisor)"
-                                           style="font-size: 0.95rem;" 
-                                           @onchange="@((ChangeEventArgs e) => {
-                                               if (!isViewOnly && !isSupervisor) item.Answer = e.Value?.ToString()!;
-                                           })" />
-                                }
-                                else if (item.Type == QuestionType.CheckBox)
-                                {
-                                    <div class="card border-0 p-3 rounded-3" style="background: #f8f9fa;">
-                                        @foreach (var detail in item.CheckBox)
-                                        {
-                                            <div class="form-check mb-2">
-                                                <input class="form-check-input" type="checkbox" 
-                                                       checked="@detail.IsChecked"
-                                                       disabled="@(isViewOnly || isSupervisor)"
-                                                       id="det-@detail.Id"
-                                                       @onchange="@((ChangeEventArgs e) => {
-                                                           if (!isViewOnly && !isSupervisor) detail.IsChecked = (bool)(e.Value ?? false);
-                                                       })" />
-                                                <label class="form-check-label ms-2" for="det-@detail.Id" style="font-size: 0.95rem;">
-                                                    @detail.Item
-                                                </label>
-                                            </div>
-                                        }
-                                    </div>
-                                }
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                <p class="mb-2 fw-semibold">No survey items yet</p>
+                                <p class="mb-0">Please select a template first</p>
                             </div>
                         }
-                    }
+                        else
+                        {
+                            @foreach (var item in reqDto.SurveyItems.OrderBy(x => x.OrderNo))
+                            {
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold text-title mb-3" style="font-size: 1rem;">
+                                        @item.OrderNo. @item.Question
+                                        @if (!isViewOnly && !isSupervisor)
+                                        {
+                                            <span class="text-danger">*</span>
+                                        }
+                                    </label>
+                                    
+                                    @if (item.Type == QuestionType.TextBox)
+                                    {
+                                        <input type="text" class="form-control border-custom @(isViewOnly ? "bg-main" : "") @(hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer) ? "is-invalid" : "")" 
+                                               value="@item.Answer" 
+                                               placeholder="Type your answer here..." 
+                                               readonly="@isViewOnly"
+                                               disabled="@(isViewOnly || isSupervisor)"
+                                               @onchange="@((ChangeEventArgs e) => {
+                                                   if (!isViewOnly && !isSupervisor) item.Answer = e.Value?.ToString()!;
+                                               })" />
+                                        @if (hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer))
+                                        {
+                                            <div class="invalid-feedback d-block">
+                                                <i class="bi bi-exclamation-circle me-1"></i>This field is required
+                                            </div>
+                                        }
+                                    }
+                                    else if (item.Type == QuestionType.TextArea)
+                                    {
+                                        <textarea class="form-control border-custom @(isViewOnly ? "bg-main" : "") @(hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer) ? "is-invalid" : "")" 
+                                                  rows="4" 
+                                                  placeholder="Type your answer here..." 
+                                                  readonly="@isViewOnly"
+                                                  disabled="@(isViewOnly || isSupervisor)"
+                                                  @onchange="@((ChangeEventArgs e) => {
+                                                      if (!isViewOnly && !isSupervisor) item.Answer = e.Value?.ToString()!;
+                                                  })">@item.Answer</textarea>
+                                        @if (hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer))
+                                        {
+                                            <div class="invalid-feedback d-block">
+                                                <i class="bi bi-exclamation-circle me-1"></i>This field is required
+                                            </div>
+                                        }
+                                    }
+                                    else if (item.Type == QuestionType.Number)
+                                    {
+                                        <input type="number" class="form-control border-custom @(isViewOnly ? "bg-main" : "") @(hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer) ? "is-invalid" : "")" 
+                                               value="@item.Answer" 
+                                               placeholder="Enter number..." 
+                                               readonly="@isViewOnly"
+                                               disabled="@(isViewOnly || isSupervisor)"
+                                               @onchange="@((ChangeEventArgs e) => {
+                                                   if (!isViewOnly && !isSupervisor) item.Answer = e.Value?.ToString()!;
+                                               })" />
+                                        @if (hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer))
+                                        {
+                                            <div class="invalid-feedback d-block">
+                                                <i class="bi bi-exclamation-circle me-1"></i>This field is required
+                                            </div>
+                                        }
+                                    }
+                                    else if (item.Type == QuestionType.CheckBox)
+                                    {
+                                        <div class="card border-custom @(isViewOnly ? "bg-main" : "") p-3 rounded-3">
+                                            @foreach (var detail in item.CheckBox)
+                                            {
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           checked="@detail.IsChecked"
+                                                           disabled="@(isViewOnly || isSupervisor)"
+                                                           id="det-@detail.Id"
+                                                           @onchange="@((ChangeEventArgs e) => {
+                                                               if (!isViewOnly && !isSupervisor) detail.IsChecked = (bool)(e.Value ?? false);
+                                                           })" />
+                                                    <label class="form-check-label ms-2 text-body" for="det-@detail.Id">
+                                                        @detail.Item
+                                                    </label>
+                                                </div>
+                                            }
+                                        </div>
+                                        @if (hasAttemptedSubmit && !item.CheckBox.Any(cb => cb.IsChecked))
+                                        {
+                                            <div class="text-danger small mt-2">
+                                                <i class="bi bi-exclamation-circle me-1"></i>Please select at least one option
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
                 </div>
             </div>
 
@@ -285,40 +347,33 @@
             <div class="d-flex gap-2 flex-wrap mb-5">
                 @if (isSupervisor)
                 {
-                    <!-- Supervisor Actions: Only Approve/Reject when status is ConfirmToApprove -->
                     @if (reqDto.Status == StatusType.ConfirmToApprove)
                     {
-                        <button class="btn text-white px-4 shadow-sm" @onclick="HandleApprove"
-                                style="background: #10b981; border: none;">
+                        <button class="btn btn-success-custom px-4 py-2 shadow-sm" @onclick="() => showApproveModal = true">
                             <i class="bi bi-check-circle me-2"></i>Approve
                         </button>
-                        <button class="btn text-white px-4 shadow-sm" @onclick="HandleReject"
-                                style="background: #ef4444; border: none;">
+                        <button class="btn btn-danger-custom px-4 py-2 shadow-sm" @onclick="() => showRejectModal = true">
                             <i class="bi bi-x-circle me-2"></i>Reject
                         </button>
                     }
                 }
                 else if (!isViewOnly)
                 {
-                    <!-- User Actions: Only show when not in view-only mode -->
-                    <button class="btn text-white px-4 shadow-sm" @onclick="HandleSubmit"
-                            style="background: #10b981; border: none;">
+                    <button class="btn btn-success-custom px-4 py-2 shadow-sm" @onclick="ValidateAndShowSubmitModal">
                         <i class="bi bi-check-circle me-2"></i>Submit
                     </button>
-                    <button class="btn text-white px-4 shadow-sm" @onclick="HandleSaveDraft"
-                            style="background: #f59e0b; border: none;">
+                    <button class="btn btn-warning px-4 py-2 shadow-sm text-white" @onclick="HandleSaveDraft">
                         <i class="bi bi-save me-2"></i>Save Draft
                     </button>
                     @if (isEditMode && reqDto.Status == StatusType.Draft)
                     {
-                        <button class="btn text-white px-3 shadow-sm" @onclick="HandleDelete"
-                                style="background: #ef4444; border: none;">
+                        <button class="btn btn-danger-custom px-4 py-2 shadow-sm" @onclick="() => showDeleteModal = true">
                             <i class="bi bi-trash me-2"></i>Delete
                         </button>
                     }
                 }
                 
-                <button class="btn btn-outline-secondary px-3 ms-auto" @onclick='() => NavigationManager.NavigateTo("/surveys")'>
+                <button class="btn btn-outline-secondary px-4 py-2 ms-auto border-custom" @onclick='() => NavigationManager.NavigateTo("/surveys")'>
                     <i class="bi bi-x-circle me-2"></i>@(isViewOnly || isSupervisor ? "Back" : "Cancel")
                 </button>
             </div>
@@ -326,91 +381,262 @@
     </div>
 </div>
 
-<!-- Template Selection Modal (User Only) -->
-@if (showTemplateModal && !isSupervisor && !isViewOnly)
-{
-    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6);">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-3">
-                <div class="modal-header text-white py-2 px-3" style="background: #64748b;">
-                    <h6 class="modal-title fw-semibold mb-0">
-                        <i class="bi bi-search me-2"></i>Select Template
-                    </h6>
-                    <button type="button" class="btn-close btn-close-white" @onclick="() => showTemplateModal = false"></button>
+<!-- Template Selection Modal -->
+<div class="modal fade @(showTemplateModal ? "show" : "")" tabindex="-1" 
+     style="display: @(showTemplateModal ? "block" : "none");">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header bg-secondary text-white border-0">
+                <h5 class="modal-title fw-semibold">
+                    <i class="bi bi-search me-2"></i>Select Template
+                </h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => showTemplateModal = false"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-main border-custom">
+                        <i class="bi bi-funnel text-primary"></i>
+                    </span>
+                    <input type="text" class="form-control border-custom" placeholder="Search template name..." 
+                           @bind="searchQuery" @bind:event="oninput" />
                 </div>
-                <div class="modal-body p-3">
-                    <div class="input-group mb-3">
-                        <span class="input-group-text bg-light">
-                            <i class="bi bi-funnel" style="color: #0ea5e9;"></i>
-                        </span>
-                        <input type="text" class="form-control" placeholder="Search template name..." 
-                               @bind="searchQuery" @bind:event="oninput" style="font-size: 0.95rem;" />
-                    </div>
-                    <div class="table-responsive" style="max-height: 400px;">
-                        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
-                            <thead class="table-light">
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-main sticky-top">
+                            <tr>
+                                <th class="fw-semibold text-title ps-3">ID</th>
+                                <th class="fw-semibold text-title">Template Name</th>
+                                <th class="fw-semibold text-title text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var filtered = allTemplates.Where(x => x.TemplateName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
+                            }
+                            @if (!filtered.Any())
+                            {
                                 <tr>
-                                    <th class="fw-semibold ps-3">ID</th>
-                                    <th class="fw-semibold">Template Name</th>
+                                    <td colspan="3" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        <p class="mb-0">No templates found</p>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var t in allTemplates.Where(x => x.TemplateName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)))
+                            }
+                            else
+                            {
+                                @foreach (var t in filtered)
                                 {
-                                    <tr style="cursor: pointer;" @onclick="() => SelectTemplate(t)">
-                                        <td class="ps-3 fw-semibold" style="color: #0ea5e9;">@t.Id</td>
-                                        <td>@t.TemplateName</td>
+                                    <tr>
+                                        <td class="ps-3 fw-semibold text-primary">@t.Id</td>
+                                        <td class="text-body">@t.TemplateName</td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-primary px-3" @onclick="() => SelectTemplate(t)">
+                                                <i class="bi bi-check-circle me-1"></i>Select
+                                            </button>
+                                        </td>
                                     </tr>
                                 }
-                            </tbody>
-                        </table>
-                    </div>
+                            }
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Update Template Modal -->
+<div class="modal fade @(showUpdateTemplateModal ? "show" : "")" tabindex="-1" 
+     style="display: @(showUpdateTemplateModal ? "block" : "none");">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-title">
+                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>Update Template Confirmation
+                </h5>
+                <button type="button" class="btn-close" @onclick="() => showUpdateTemplateModal = false"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-warning border-0 mb-3">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Important:</strong> Updating to the latest template will replace all current survey items with the new template structure.
+                </div>
+                <p class="mb-2 text-title"><strong>Current Status:</strong></p>
+                <ul class="mb-3 text-body">
+                    <li>Your current answers will be <strong>preserved where possible</strong></li>
+                    <li>New questions will be added as empty</li>
+                    <li>Removed questions will be deleted</li>
+                </ul>
+                <p class="text-muted mb-0">
+                    Do you want to update this survey to use the latest template version?
+                </p>
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-outline-secondary border-custom px-4" @onclick="() => showUpdateTemplateModal = false">
+                    <i class="bi bi-x-circle me-1"></i>No, Keep Current
+                </button>
+                <button class="btn btn-warning text-white px-4" @onclick="HandleUpdateToLatestTemplate">
+                    <i class="bi bi-arrow-repeat me-1"></i>Yes, Update Template
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Submit Confirmation Modal -->
+<div class="modal fade @(showSubmitModal ? "show" : "")" tabindex="-1" 
+     style="display: @(showSubmitModal ? "block" : "none");">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-title">
+                    <i class="bi bi-question-circle text-primary me-2"></i>Confirm Submission
+                </h5>
+                <button type="button" class="btn-close" @onclick="() => showSubmitModal = false"></button>
+            </div>
+            <div class="modal-body text-body p-4">
+                <p class="mb-0">Are you sure you want to submit this survey for approval?</p>
+                <div class="bg-main rounded-3 p-3 mt-3">
+                    <small class="text-muted d-block mb-1">Survey Details:</small>
+                    <ul class="list-unstyled mb-0 small">
+                        <li><strong>Document:</strong> @reqDto.DocumentId</li>
+                        <li><strong>Template:</strong> @selectedTemplateName</li>
+                        <li><strong>Items:</strong> @reqDto.SurveyItems.Count item(s)</li>
+                    </ul>
+                </div>
+                <div class="alert alert-info border-0 mt-3 mb-0">
+                    <small><i class="bi bi-info-circle me-1"></i>Once submitted, you cannot edit this survey until it's reviewed.</small>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary border-custom" @onclick="() => showSubmitModal = false">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success-custom" @onclick="() => ProcessSave(StatusType.ConfirmToApprove)">
+                    <i class="bi bi-check-circle me-1"></i>Yes, Submit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade @(showDeleteModal ? "show" : "")" tabindex="-1" 
+     style="display: @(showDeleteModal ? "block" : "none");">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-title">
+                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close" @onclick="() => showDeleteModal = false"></button>
+            </div>
+            <div class="modal-body text-body p-4">
+                <p class="mb-2">Are you sure you want to delete this survey?</p>
+                <div class="alert alert-danger border-0 mb-0">
+                    <small><i class="bi bi-info-circle me-1"></i>This action cannot be undone!</small>
+                </div>
+                <div class="bg-main rounded-3 p-3 mt-3">
+                    <small class="text-muted d-block mb-1">Survey to be deleted:</small>
+                    <ul class="list-unstyled mb-0 small">
+                        <li><strong>Document:</strong> @reqDto.DocumentId</li>
+                        <li><strong>Template:</strong> @selectedTemplateName</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary border-custom" @onclick="() => showDeleteModal = false">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger-custom" @onclick="HandleDelete">
+                    <i class="bi bi-trash me-1"></i>Yes, Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Approve Confirmation Modal -->
+<div class="modal fade @(showApproveModal ? "show" : "")" tabindex="-1" 
+     style="display: @(showApproveModal ? "block" : "none");">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-title">
+                    <i class="bi bi-check-circle text-success me-2"></i>Confirm Approval
+                </h5>
+                <button type="button" class="btn-close" @onclick="() => showApproveModal = false"></button>
+            </div>
+            <div class="modal-body text-body p-4">
+                <p class="mb-0">Are you sure you want to approve this survey?</p>
+                <div class="bg-main rounded-3 p-3 mt-3">
+                    <small class="text-muted d-block mb-1">Survey Details:</small>
+                    <ul class="list-unstyled mb-0 small">
+                        <li><strong>Document:</strong> @reqDto.DocumentId</li>
+                        <li><strong>Requester:</strong> @(requesterData?.Username ?? "N/A")</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary border-custom" @onclick="() => showApproveModal = false">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success-custom" @onclick="HandleApprove">
+                    <i class="bi bi-check-circle me-1"></i>Yes, Approve
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Confirmation Modal -->
+<div class="modal fade @(showRejectModal ? "show" : "")" tabindex="-1" 
+     style="display: @(showRejectModal ? "block" : "none");">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-title">
+                    <i class="bi bi-x-circle text-danger me-2"></i>Confirm Rejection
+                </h5>
+                <button type="button" class="btn-close" @onclick="() => showRejectModal = false"></button>
+            </div>
+            <div class="modal-body text-body p-4">
+                <p class="mb-0">Are you sure you want to reject this survey?</p>
+                <div class="bg-main rounded-3 p-3 mt-3">
+                    <small class="text-muted d-block mb-1">Survey Details:</small>
+                    <ul class="list-unstyled mb-0 small">
+                        <li><strong>Document:</strong> @reqDto.DocumentId</li>
+                        <li><strong>Requester:</strong> @(requesterData?.Username ?? "N/A")</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary border-custom" @onclick="() => showRejectModal = false">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger-custom" @onclick="HandleReject">
+                    <i class="bi bi-x-circle me-1"></i>Yes, Reject
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Backdrop -->
+@if (showTemplateModal || showUpdateTemplateModal || showSubmitModal || showDeleteModal || showApproveModal || showRejectModal)
+{
+    <div class="modal-backdrop fade show"></div>
 }
 
-<!-- Update Template Confirmation Modal (User Only, Draft Status) -->
-@if (showUpdateTemplateModal && !isSupervisor && !isViewOnly && reqDto.Status == StatusType.Draft)
-{
-    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.7);">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-3">
-                <div class="modal-header text-white py-3 px-4" style="background: #f59e0b;">
-                    <h6 class="modal-title fw-semibold mb-0">
-                        <i class="bi bi-exclamation-triangle me-2"></i>Update Template Confirmation
-                    </h6>
-                    <button type="button" class="btn-close btn-close-white" @onclick="() => showUpdateTemplateModal = false"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="alert alert-warning border-0 mb-3">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <strong>Important:</strong> Updating to the latest template will replace all current survey items with the new template structure.
-                    </div>
-                    <p class="mb-2"><strong>Current Status:</strong></p>
-                    <ul class="mb-3">
-                        <li>Your current answers will be <strong>preserved where possible</strong></li>
-                        <li>New questions will be added as empty</li>
-                        <li>Removed questions will be deleted</li>
-                    </ul>
-                    <p class="text-muted mb-0" style="font-size: 0.9rem;">
-                        Do you want to update this survey to use the latest template version?
-                    </p>
-                </div>
-                <div class="modal-footer bg-light py-3 px-4">
-                    <button class="btn btn-outline-secondary px-4" @onclick="() => showUpdateTemplateModal = false">
-                        <i class="bi bi-x-circle me-2"></i>No, Keep Current
-                    </button>
-                    <button class="btn text-white px-4" @onclick="HandleUpdateToLatestTemplate"
-                            style="background: #f59e0b; border: none;">
-                        <i class="bi bi-arrow-repeat me-2"></i>Yes, Update Template
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
+<style>
+    .transition-icon {
+        transition: transform 0.3s ease;
+    }
+
+    button:not(.collapsed) .transition-icon {
+        transform: rotate(180deg);
+    }
+</style>
 
 @code {
     private SurveyHeaderRequestDTO reqDto = new() { SurveyItems = new() };
@@ -421,15 +647,24 @@
     private string selectedTemplateName = "";
     private string selectedTemplateTheme = "";
     private string searchQuery = "";
+    private string? alertMessage;
+    private string? successMessage;
+    private int userPositionId = 0;
+
+    private bool isDataLoaded = false;
     private bool isEditMode = false;
+    private bool isSupervisor = false;
+    private bool isViewOnly = false;
+    private bool hasBeenSaved = false;
+    private bool hasAttemptedSubmit = false;
+
     private bool showTemplateModal = false;
     private bool showUpdateTemplateModal = false;
     private bool showTemplateUpdateWarning = false;
-    private bool hasBeenSaved = false;
-    private bool isSupervisor = false;
-    private bool isViewOnly = false;
-    private int userPositionId = 0;
-    private bool isDataLoaded = false;
+    private bool showSubmitModal = false;
+    private bool showDeleteModal = false;
+    private bool showApproveModal = false;
+    private bool showRejectModal = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -437,13 +672,16 @@
         {
             await LoadAuthStateFromSession();
             
-            isSupervisor = AuthState.CurrentUser?.RoleId == 1;
-            userPositionId = AuthState.CurrentUser?.PositionId ?? 0;
+            if (AuthState.CurrentUser != null)
+            {
+                isSupervisor = AuthState.CurrentUser.RoleId == 1;
+                userPositionId = AuthState.CurrentUser.PositionId;
 
-            await InitializeFormData();
-            
-            isDataLoaded = true;
-            StateHasChanged();
+                await InitializeFormData();
+                
+                isDataLoaded = true;
+                StateHasChanged();
+            }
         }
     }
 
@@ -452,7 +690,6 @@
         try
         {
             var userJson = await JS.InvokeAsync<string>("sessionStorage.getItem", "UserSession");
-            
             if (!string.IsNullOrEmpty(userJson))
             {
                 var user = JsonSerializer.Deserialize<User>(userJson);
@@ -462,13 +699,9 @@
                     return;
                 }
             }
-            
             NavigationManager.NavigateTo("/login", true);
         }
-        catch (Exception)
-        {
-            NavigationManager.NavigateTo("/login", true);
-        }
+        catch { NavigationManager.NavigateTo("/login", true); }
     }
 
     private async Task InitializeFormData()
@@ -476,90 +709,31 @@
         allTemplates = await TemplateService.GetTemplateByPositionId(userPositionId) ?? new();
         
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("surveyId", out var id))
+        var query = QueryHelpers.ParseQuery(uri.Query);
+
+        if (query.TryGetValue("surveyId", out var id))
         {
             await LoadExistingSurvey(id!);
         }
         else
         {
-            await GenerateDocumentId();
-            if (AuthState.CurrentUser != null)
-            {
-                reqDto.RequesterId = AuthState.CurrentUser.Id;
-                await LoadRequesterData();
-            }
+            await PrepareNewSurvey();
         }
 
         DetermineViewOnlyMode();
     }
 
-    private void DetermineViewOnlyMode()
+    private async Task PrepareNewSurvey()
     {
-        if (isSupervisor)
-        {
-            isViewOnly = true;
-        }
-        else if (isEditMode)
-        {
-            isViewOnly = reqDto.Status != StatusType.Draft;
-        }
-        else
-        {
-            isViewOnly = false;
-        }
-    }
-
-    private string GetPageTitle()
-    {
-        if (isSupervisor)
-        {
-            return "Review Survey";
-        }
-        else if (isViewOnly)
-        {
-            return "View Survey";
-        }
-        else if (isEditMode)
-        {
-            return "Edit Survey";
-        }
-        else
-        {
-            return "Create New Survey";
-        }
-    }
-
-    private string GetPageSubtitle()
-    {
-        if (isSupervisor)
-        {
-            return $"Review and approve survey: {reqDto.DocumentId}";
-        }
-        else if (isViewOnly)
-        {
-            return $"View survey document: {reqDto.DocumentId}";
-        }
-        else if (isEditMode)
-        {
-            return $"Modify survey document: {reqDto.DocumentId}";
-        }
-        else
-        {
-            return "Fill out survey form";
-        }
-    }
-
-    private async Task LoadRequesterData()
-    {
-        if (!string.IsNullOrEmpty(reqDto.RequesterId))
-        {
-            requesterData = await UserService.GetUserById(reqDto.RequesterId);
-        }
-    }
-
-    private async Task GenerateDocumentId()
-    {
+        isEditMode = false;
+        hasBeenSaved = false;
         reqDto.DocumentId = await IdGeneratorUtil.GenerateSurveyId(DbContext);
+        
+        if (AuthState.CurrentUser != null)
+        {
+            reqDto.RequesterId = AuthState.CurrentUser.Id;
+            await LoadRequesterData();
+        }
     }
 
     private async Task LoadExistingSurvey(string id)
@@ -567,82 +741,77 @@
         isEditMode = true;
         hasBeenSaved = true;
         currentSurveyId = id;
+        
         var data = await SurveyService.GetSurveyHeaderById(id);
-        if (data != null)
+        if (data == null) return;
+
+        reqDto = new SurveyHeaderRequestDTO
         {
-            reqDto = new SurveyHeaderRequestDTO
+            DocumentId = data.DocumentId,
+            RequesterId = data.RequesterId,
+            Status = Enum.Parse<StatusType>(data.Status),
+            TemplateHeaderId = data.TemplateHeaderId,
+            UpdatedAtTemplate = data.UpdatedAtTemplate,
+            SurveyItems = data.SurveyItems.Select(si => new SurveyItemRequestDTO
             {
-                DocumentId = data.DocumentId,
-                RequesterId = data.RequesterId,
-                Status = Enum.Parse<StatusType>(data.Status),
-                TemplateHeaderId = data.TemplateHeaderId,
-                UpdatedAtTemplate = data.UpdatedAtTemplate,
-                SurveyItems = data.SurveyItems.Select(si => new SurveyItemRequestDTO
+                Id = si.Id,
+                DocumentSurveyId = si.DocumentSurveyId,
+                TemplateItemId = si.TemplateItemId,
+                Question = si.Question,
+                Type = Enum.Parse<QuestionType>(si.Type),
+                OrderNo = si.OrderNo,
+                Answer = si.Answer,
+                CheckBox = si.CheckBox.Select(cb => new SurveyItemDetailRequestDTO
                 {
-                    Id = si.Id,
-                    DocumentSurveyId = si.DocumentSurveyId,
-                    TemplateItemId = si.TemplateItemId,
-                    Question = si.Question,
-                    Type = Enum.Parse<QuestionType>(si.Type),
-                    OrderNo = si.OrderNo,
-                    Answer = si.Answer,
-                    CheckBox = si.CheckBox.Select(cb => new SurveyItemDetailRequestDTO
-                    {
-                        Id = cb.Id,
-                        DocumentItemId = cb.DocumentItemId,
-                        TemplateItemDetailId = cb.TemplateItemDetailId,
-                        Item = cb.Item,
-                        IsChecked = cb.IsChecked
-                    }).ToList()
+                    Id = cb.Id,
+                    DocumentItemId = cb.DocumentItemId,
+                    TemplateItemDetailId = cb.TemplateItemDetailId,
+                    Item = cb.Item,
+                    IsChecked = cb.IsChecked
                 }).ToList()
-            };
-            
-            selectedTemplateName = data.Header != null ? data.Header.TemplateName : "N/A";
-            selectedTemplateTheme = data.Header != null ? data.Header.Theme : "N/A";
-            
-            // Load requester data with supervisor
-            await LoadRequesterData();
-            
-            // Check if template was updated - Only show for User and Draft status and not view-only
-            if (data.Header != null && 
-                data.UpdatedAtTemplate != data.Header.UpdatedAt && 
-                !isSupervisor && 
-                reqDto.Status == StatusType.Draft &&
-                !isViewOnly)
-            {
-                showTemplateUpdateWarning = true;
-            }
+            }).ToList()
+        };
+        
+        selectedTemplateName = data.Header?.TemplateName ?? "N/A";
+        selectedTemplateTheme = data.Header?.Theme ?? "N/A";
+        
+        await LoadRequesterData();
+
+        if (data.Header != null && data.UpdatedAtTemplate != data.Header.UpdatedAt && 
+            !isSupervisor && reqDto.Status == StatusType.Draft && !isViewOnly)
+        {
+            showTemplateUpdateWarning = true;
         }
     }
 
     private async Task SelectTemplate(TemplateHeaderResponseDTO template)
     {
         var fullTemplate = await TemplateService.GetTemplateByHeaderId(template.Id);
-        if (fullTemplate != null)
+        if (fullTemplate == null) return;
+
+        reqDto.TemplateHeaderId = fullTemplate.Id;
+        reqDto.UpdatedAtTemplate = fullTemplate.UpdatedAt;
+        selectedTemplateName = fullTemplate.TemplateName;
+        selectedTemplateTheme = fullTemplate.Theme;
+        
+        reqDto.SurveyItems = fullTemplate.Items.Select(i => new SurveyItemRequestDTO
         {
-            reqDto.TemplateHeaderId = fullTemplate.Id;
-            reqDto.UpdatedAtTemplate = fullTemplate.UpdatedAt;
-            selectedTemplateName = fullTemplate.TemplateName;
-            selectedTemplateTheme = fullTemplate.Theme;
-            
-            reqDto.SurveyItems = fullTemplate.Items.Select(i => new SurveyItemRequestDTO
+            TemplateItemId = i.Id,
+            Question = i.Question,
+            Type = Enum.Parse<QuestionType>(i.Type),
+            OrderNo = i.OrderNo,
+            Answer = "",
+            CheckBox = i.ItemDetails.Select(d => new SurveyItemDetailRequestDTO
             {
-                TemplateItemId = i.Id,
-                Question = i.Question,
-                Type = Enum.Parse<QuestionType>(i.Type),
-                OrderNo = i.OrderNo,
-                Answer = "",
-                CheckBox = i.ItemDetails.Select(d => new SurveyItemDetailRequestDTO
-                {
-                    TemplateItemDetailId = d.Id,
-                    Item = d.Item,
-                    IsChecked = false
-                }).ToList()
-            }).ToList();
-        }
+                TemplateItemDetailId = d.Id,
+                Item = d.Item,
+                IsChecked = false
+            }).ToList()
+        }).ToList();
         
         showTemplateModal = false;
         showTemplateUpdateWarning = false;
+        alertMessage = null;
         StateHasChanged();
     }
 
@@ -651,9 +820,7 @@
         try
         {
             showUpdateTemplateModal = false;
-
             var latestTemplate = await TemplateService.GetTemplateByHeaderId(reqDto.TemplateHeaderId!);
-            
             if (latestTemplate == null) return;
 
             var updatePayload = new SurveyHeaderRequestDTO 
@@ -676,139 +843,139 @@
             };
 
             var result = await SurveyService.UpdateSurveyHeaderFromLatestTemplate(currentSurveyId!, updatePayload);
-            
             if (result != null)
             {
-                reqDto = new SurveyHeaderRequestDTO { SurveyItems = new() }; 
                 await LoadExistingSurvey(currentSurveyId!);
-                
                 showTemplateUpdateWarning = false;
+                successMessage = "Template updated and answers preserved successfully!";
                 StateHasChanged();
-                await JS.InvokeVoidAsync("alert", "Template updated and answers preserved!");
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) { alertMessage = "Error: " + ex.Message; }
+    }
+
+    private void ValidateAndShowSubmitModal()
+    {
+        hasAttemptedSubmit = true;
+        alertMessage = null;
+
+        if (string.IsNullOrEmpty(reqDto.TemplateHeaderId))
         {
-            await JS.InvokeVoidAsync("alert", "Error: " + ex.Message);
+            alertMessage = "Please select a template first";
+            return;
         }
+
+        bool hasEmptyAnswers = reqDto.SurveyItems.Any(item => 
+        {
+            if (item.Type == QuestionType.CheckBox)
+            {
+                return !item.CheckBox.Any(cb => cb.IsChecked);
+            }
+            return string.IsNullOrWhiteSpace(item.Answer);
+        });
+
+        if (hasEmptyAnswers)
+        {
+            alertMessage = "Please complete all required fields before submitting";
+            return;
+        }
+
+        showSubmitModal = true;
     }
 
     private async Task HandleApprove()
     {
-        try
-        {
-            var result = await SurveyService.UpdateSurveyHeaderStatus(currentSurveyId!, "Confirmed");
-            if (result != null)
-            {
-                await JS.InvokeVoidAsync("alert", "Survey has been approved!");
-                NavigationManager.NavigateTo("/surveys");
-            }
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", "Error: " + ex.Message);
-        }
+        showApproveModal = false;
+        await UpdateStatus("Confirmed", "Survey has been approved successfully!");
     }
 
     private async Task HandleReject()
     {
+        showRejectModal = false;
+        await UpdateStatus("Rejected", "Survey has been rejected!");
+    }
+
+    private async Task UpdateStatus(string status, string alertMsg)
+    {
         try
         {
-            var result = await SurveyService.UpdateSurveyHeaderStatus(currentSurveyId!, "Rejected");
+            var result = await SurveyService.UpdateSurveyHeaderStatus(currentSurveyId!, status);
             if (result != null)
             {
-                await JS.InvokeVoidAsync("alert", "Survey has been rejected!");
+                successMessage = alertMsg;
+                await Task.Delay(1500);
                 NavigationManager.NavigateTo("/surveys");
             }
         }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", "Error: " + ex.Message);
-        }
+        catch (Exception ex) { alertMessage = "Error: " + ex.Message; }
     }
 
-    private string GetCurrentStatus()
-    {
-        if (!hasBeenSaved && !isEditMode)
-        {
-            return "New";
-        }
-        return reqDto.Status.ToString();
-    }
+    private async Task HandleSaveDraft() => await ProcessSave(StatusType.Draft);
 
-    private async Task HandleSaveDraft()
+    private async Task ProcessSave(StatusType status)
     {
         if (isViewOnly) return;
-        
-        reqDto.Status = StatusType.Draft;
-        await ProcessSave();
-    }
-
-    private async Task HandleSubmit()
-    {
-        if (isViewOnly) return;
-        
-        reqDto.Status = StatusType.ConfirmToApprove;
-        await ProcessSave();
-    }
-
-    private async Task ProcessSave()
-    {
         try
         {
+            showSubmitModal = false;
+            
             if (string.IsNullOrEmpty(reqDto.TemplateHeaderId))
             {
-                await JS.InvokeVoidAsync("alert", "Please select a template first");
+                alertMessage = "Please select a template first";
                 return;
             }
 
-            if (isEditMode)
-            {
-                await SurveyService.UpdateSurveyHeader(currentSurveyId!, reqDto);
-            }
-            else
-            {
-                if (AuthState.CurrentUser != null)
-                {
-                    reqDto.RequesterId = AuthState.CurrentUser.Id;
-                }
-                await SurveyService.CreateSurveyHeader(reqDto);
-            }
+            reqDto.Status = status;
+            if (isEditMode) await SurveyService.UpdateSurveyHeader(currentSurveyId!, reqDto);
+            else await SurveyService.CreateSurveyHeader(reqDto);
             
             hasBeenSaved = true;
+            successMessage = status == StatusType.Draft ? "Draft saved successfully!" : "Survey submitted successfully!";
+            await Task.Delay(1500);
             NavigationManager.NavigateTo("/surveys");
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-            await JS.InvokeVoidAsync("alert", "Error: " + ex.Message);
-        }
+        catch (Exception ex) { alertMessage = "Error: " + ex.Message; }
     }
 
     private async Task HandleDelete()
     {
         if (isViewOnly) return;
+        showDeleteModal = false;
         
-        if (await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete survey {reqDto.DocumentId}?"))
+        try
         {
             await SurveyService.DeleteSurveyHeader(currentSurveyId!);
+            successMessage = "Survey deleted successfully!";
+            await Task.Delay(1000);
             NavigationManager.NavigateTo("/surveys");
         }
+        catch (Exception ex) { alertMessage = "Error: " + ex.Message; }
     }
 
+    private void DetermineViewOnlyMode()
+    {
+        if (isSupervisor) isViewOnly = true;
+        else if (isEditMode) isViewOnly = reqDto.Status != StatusType.Draft;
+        else isViewOnly = false;
+    }
+
+    private async Task LoadRequesterData()
+    {
+        if (!string.IsNullOrEmpty(reqDto.RequesterId))
+            requesterData = await UserService.GetUserById(reqDto.RequesterId);
+    }
+
+    private string GetPageTitle() => isSupervisor ? "Review Survey" : (isViewOnly ? "View Survey" : (isEditMode ? "Edit Survey" : "Create New Survey"));
+    private string GetPageSubtitle() => isSupervisor ? $"Review: {reqDto.DocumentId}" : (isViewOnly ? $"View: {reqDto.DocumentId}" : (isEditMode ? $"Modify: {reqDto.DocumentId}" : "Fill out survey form"));
+    private string GetCurrentStatus() => (!hasBeenSaved && !isEditMode) ? "New" : reqDto.Status.ToString();
+    private string GetStatusDisplay(string status) => status == "ConfirmToApprove" ? "Pending Approval" : status;
     private string GetStatusBadgeClass(string status) => status switch
     {
-        "New" => "bg-secondary",
-        "Draft" => "bg-warning",
-        "ConfirmToApprove" => "bg-info",
-        "Confirmed" => "bg-success",
-        "Rejected" => "bg-danger",
+        "New" => "bg-secondary", 
+        "Draft" => "bg-warning text-dark", 
+        "ConfirmToApprove" => "bg-info text-dark", 
+        "Confirmed" => "badge-success-custom", 
+        "Rejected" => "badge-danger-custom", 
         _ => "bg-secondary"
-    };
-
-    private string GetStatusDisplay(string status) => status switch
-    {
-        "ConfirmToApprove" => "Pending Approval",
-        _ => status
     };
 }

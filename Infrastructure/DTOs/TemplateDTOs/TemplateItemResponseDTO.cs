@@ -9,7 +9,7 @@ namespace TaskSurvey.Infrastructure.DTOs.TemplateDTOs
     {
         public int Id { get; set; }
         public required string TemplateHeaderId { get; set; }
-        public virtual TemplateHeaderResponseDTO? TemplateHeader { get; set; }
+        public TemplateHeaderResponseDTO? TemplateHeader { get; set; }
         public required string Question { get; set; }
         public required string Type { get; set; }
         public int OrderNo { get; set; }

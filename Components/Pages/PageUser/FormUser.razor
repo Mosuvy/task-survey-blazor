@@ -13,125 +13,171 @@
 
 <PageTitle>Form User</PageTitle>
 
-<div class="container mt-4 mb-5">
+<div class="container-fluid px-4 py-4 bg-main" style="min-height: 100vh;">
     <div class="row justify-content-center">
         <div class="col-lg-9">
             <!-- Header -->
-            <div class="mb-3">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                    <div class="text-white p-2 rounded" style="background: #0ea5e9;">
-                        <i class="bi bi-person-fill-gear fs-5"></i>
+            <div class="mb-4">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="bg-primary text-white p-3 rounded-3 shadow-sm">
+                        <i class="bi bi-person-fill-gear fs-4"></i>
                     </div>
                     <div>
-                        <h4 class="mb-0 fw-bold text-dark">@(isEditMode ? "Edit User" : "Create New User")</h4>
-                        <p class="text-muted mb-0" style="font-size: 0.85rem;">@(isEditMode ? $"Modify user data for ID: {currentUserId}" : "Add a new user to the system")</p>
+                        <h3 class="mb-1 fw-bold text-title">@(isEditMode ? "Edit User" : "Create New User")</h3>
+                        <p class="text-muted mb-0" style="font-size: 0.9rem;">
+                            @(isEditMode ? $"Modify user data for ID: {currentUserId}" : "Add a new user to the system")
+                        </p>
                     </div>
                 </div>
             </div>
 
             @if (!string.IsNullOrEmpty(alertMessage))
             {
-                <div class="alert alert-danger border-0 shadow-sm mb-3 py-2" role="alert" style="font-size: 0.9rem;">
+                <div class="alert alert-danger border-0 shadow-sm mb-3 alert-dismissible fade show" role="alert">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                     <strong>Error!</strong> @alertMessage
+                    <button type="button" class="btn-close" @onclick="() => alertMessage = null"></button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success border-0 shadow-sm mb-3 alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    <strong>Success!</strong> @successMessage
+                    <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
                 </div>
             }
 
             <!-- Main Form Card -->
-            <div class="card border-0 shadow-sm rounded-3 mb-3">
-                <div class="card-header text-white py-2 px-3" style="background: #0ea5e9;">
+            <div class="card border-custom shadow-sm rounded-3 mb-3 bg-card">
+                <div class="card-header bg-primary text-white py-3 px-4 border-0">
                     <h6 class="mb-0 fw-semibold">
                         <i class="bi bi-person-badge me-2"></i>User Information
                     </h6>
                 </div>
                 
-                <div class="card-body p-3">
+                <div class="card-body p-4">
                     <div class="row g-3">
                         <!-- User ID -->
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">
-                                <i class="bi bi-hash me-1" style="color: #0ea5e9;"></i>User ID
+                            <label class="form-label fw-semibold text-title mb-2">
+                                <i class="bi bi-hash me-1 text-primary"></i>User ID
+                                <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0">
-                                    <i class="bi bi-fingerprint" style="color: #0ea5e9;"></i>
+                                <span class="input-group-text bg-main border-custom">
+                                    <i class="bi bi-fingerprint text-primary"></i>
                                 </span>
-                                <input type="text" class="form-control bg-light fw-semibold border-start-0" 
-                                       value="@displayId" readonly style="font-size: 0.95rem;" />
-                                <button class="btn text-white px-3" type="button" 
-                                        @onclick="() => showUserLookup = true" 
-                                        style="background: #0ea5e9; border: none;">
+                                <input type="text" class="form-control bg-main border-custom fw-semibold text-body" 
+                                       value="@displayId" readonly />
+                                <button class="btn btn-primary px-4" type="button" 
+                                        @onclick="OpenUserLookupModal">
                                     <i class="bi bi-search me-1"></i>Lookup
                                 </button>
                             </div>
+                            <small class="text-muted">Auto-generated or select existing user to edit</small>
                         </div>
 
                         <!-- Username -->
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">
-                                <i class="bi bi-person me-1" style="color: #0ea5e9;"></i>Username
+                            <label class="form-label fw-semibold text-title mb-2">
+                                <i class="bi bi-person me-1 text-primary"></i>Username
+                                <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control @GetValidationClass(reqDto.Username)" 
-                                   @bind="reqDto.Username" placeholder="Enter full name/username" style="font-size: 0.95rem;" />
+                            <input type="text" class="form-control border-custom @GetValidationClass(reqDto.Username)" 
+                                   @bind="reqDto.Username" placeholder="Enter full name/username" />
+                            @if (hasAttemptedSubmit && string.IsNullOrWhiteSpace(reqDto.Username))
+                            {
+                                <div class="invalid-feedback d-block">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Username is required
+                                </div>
+                            }
                         </div>
 
                         <!-- Position Level -->
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">
-                                <i class="bi bi-diagram-3 me-1" style="color: #0ea5e9;"></i>Position Level
+                            <label class="form-label fw-semibold text-title mb-2">
+                                <i class="bi bi-diagram-3 me-1 text-primary"></i>Position Level
+                                <span class="text-danger">*</span>
                             </label>
-                            <select class="form-select @(reqDto.PositionId == 0 && hasAttemptedSubmit ? "is-invalid" : "")" 
-                                    @bind="reqDto.PositionId" style="font-size: 0.95rem;">
+                            <select class="form-select border-custom @(reqDto.PositionId == 0 && hasAttemptedSubmit ? "is-invalid" : "")" 
+                                    @bind="reqDto.PositionId">
                                 <option value="0">-- Select Position Level --</option>
                                 @foreach (var p in positions)
                                 {
                                     <option value="@p.Id">@p.PositionLevel</option>
                                 }
                             </select>
+                            @if (hasAttemptedSubmit && reqDto.PositionId == 0)
+                            {
+                                <div class="invalid-feedback d-block">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Position level is required
+                                </div>
+                            }
                         </div>
 
                         <!-- Position Name -->
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">
-                                <i class="bi bi-briefcase me-1" style="color: #0ea5e9;"></i>Position Name
+                            <label class="form-label fw-semibold text-title mb-2">
+                                <i class="bi bi-briefcase me-1 text-primary"></i>Position Name
+                                <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control @GetValidationClass(reqDto.PositionName)" 
-                                   @bind="reqDto.PositionName" placeholder="Senior Developer" style="font-size: 0.95rem;" />
+                            <input type="text" class="form-control border-custom @GetValidationClass(reqDto.PositionName)" 
+                                   @bind="reqDto.PositionName" placeholder="Senior Developer" />
+                            @if (hasAttemptedSubmit && string.IsNullOrWhiteSpace(reqDto.PositionName))
+                            {
+                                <div class="invalid-feedback d-block">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Position name is required
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Supervisor Card -->
-            <div class="card border-0 shadow-sm rounded-3 mb-3">
-                <div class="card-header text-white py-2 px-3" style="background: #64748b;">
-                    <h6 class="mb-0 fw-semibold">
-                        <i class="bi bi-person-lines-fill me-2"></i>Supervisor Details
-                    </h6>
-                    <small class="opacity-75" style="font-size: 0.8rem;">Required for Officer positions only</small>
+            <div class="card border-custom shadow-sm rounded-3 mb-4 bg-card">
+                <div class="card-header text-white py-3 px-4 border-0" style="background-color: var(--bs-secondary);">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-semibold">
+                            <i class="bi bi-person-lines-fill me-2"></i>Supervisor Details
+                        </h6>
+                        <span class="badge bg-light text-dark">Required for Officer positions</span>
+                    </div>
                 </div>
                 
-                <div class="card-body p-3">
+                <div class="card-body p-4">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Officer ID</label>
+                            <label class="form-label fw-semibold text-title mb-2">
+                                Officer ID <span class="text-danger">*</span>
+                            </label>
                             <div class="input-group">
-                                <input type="text" class="form-control bg-light" @bind="reqDto.SupervisorId" readonly style="font-size: 0.95rem;" />
-                                <button class="btn text-white px-3" type="button" @onclick="() => showSupLookup = true"
-                                        style="background: #64748b; border: none;">
+                                <input type="text" class="form-control bg-main border-custom @(hasAttemptedSubmit && string.IsNullOrWhiteSpace(reqDto.SupervisorId) ? "is-invalid" : "")" 
+                                       @bind="reqDto.SupervisorId" readonly />
+                                <button class="btn text-white px-4" type="button" 
+                                        @onclick="OpenSupervisorLookupModal"
+                                        style="background-color: var(--bs-secondary);">
                                     <i class="bi bi-search me-1"></i>Select
                                 </button>
                             </div>
+                            @if (hasAttemptedSubmit && string.IsNullOrWhiteSpace(reqDto.SupervisorId))
+                            {
+                                <div class="invalid-feedback d-block">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Supervisor is required
+                                </div>
+                            }
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Name</label>
-                            <input type="text" class="form-control bg-light" 
-                                   @bind="selectedSupName" readonly style="font-size: 0.95rem;" />
+                            <label class="form-label fw-semibold text-title mb-2">Name</label>
+                            <input type="text" class="form-control bg-main border-custom text-body" 
+                                   @bind="selectedSupName" readonly />
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Position</label>
-                            <input type="text" class="form-control bg-light" 
-                                   @bind="selectedSupPos" readonly style="font-size: 0.95rem;" />
+                            <label class="form-label fw-semibold text-title mb-2">Position</label>
+                            <input type="text" class="form-control bg-main border-custom text-body" 
+                                   @bind="selectedSupPos" readonly />
                         </div>
                     </div>
                 </div>
@@ -139,22 +185,19 @@
 
             <!-- Action Buttons -->
             <div class="d-flex gap-2 flex-wrap">
-                <button class="btn text-white px-4 shadow-sm" @onclick="HandleSubmit"
-                        style="background: #10b981; border: none;">
-                    <i class="bi bi-check-circle me-2"></i>Submit
+                <button class="btn btn-success-custom px-4 py-2 shadow-sm" @onclick="ShowSubmitConfirmation">
+                    <i class="bi bi-check-circle me-2"></i>@(isEditMode ? "Update" : "Submit")
                 </button>
-                <button class="btn text-white px-3 shadow-sm" @onclick="ResetForm"
-                        style="background: #0ea5e9; border: none;">
+                <button class="btn btn-primary px-4 py-2 shadow-sm" @onclick="ResetForm">
                     <i class="bi bi-file-earmark-plus me-2"></i>New
                 </button>
                 @if (isEditMode)
                 {
-                    <button class="btn text-white px-3 shadow-sm" @onclick="HandleDelete"
-                            style="background: #ef4444; border: none;">
+                    <button class="btn btn-danger-custom px-4 py-2 shadow-sm" @onclick="ShowDeleteConfirmation">
                         <i class="bi bi-trash me-2"></i>Delete
                     </button>
                 }
-                <button class="btn btn-outline-secondary px-3 ms-auto" 
+                <button class="btn btn-outline-secondary px-4 py-2 ms-auto border-custom" 
                         @onclick='() => NavigationManager.NavigateTo("/users")'>
                     <i class="bi bi-x-circle me-2"></i>Cancel
                 </button>
@@ -163,74 +206,228 @@
     </div>
 </div>
 
-<!-- Lookup Modal -->
-@if (showSupLookup || showUserLookup)
-{
-    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6);">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-3">
-                <div class="modal-header text-white py-2 px-3" 
-                     style="background: @(showUserLookup ? "#0ea5e9" : "#64748b");">
-                    <h6 class="modal-title fw-semibold mb-0">
-                        <i class="bi bi-search me-2"></i>
-                        @(showUserLookup ? "Select User to Edit" : "Select Supervisor (Officer)")
-                    </h6>
-                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModals"></button>
+<!-- User Lookup Modal -->
+<div class="modal fade @(showUserLookup ? "show" : "")" tabindex="-1" 
+     style="display: @(showUserLookup ? "block" : "none");">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header bg-primary text-white border-0">
+                <h5 class="modal-title fw-semibold">
+                    <i class="bi bi-search me-2"></i>Select User to Edit
+                </h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="CloseModals"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-main border-custom">
+                        <i class="bi bi-funnel text-primary"></i>
+                    </span>
+                    <input type="text" class="form-control border-custom" 
+                           placeholder="Search by name or ID..." 
+                           @bind="searchQuery" @bind:event="oninput" />
                 </div>
-                <div class="modal-body p-3">
-                    <div class="input-group mb-3">
-                        <span class="input-group-text bg-light">
-                            <i class="bi bi-funnel" style="color: #0ea5e9;"></i>
-                        </span>
-                        <input type="text" class="form-control" 
-                               placeholder="Search by name or ID..." 
-                               @bind="searchQuery" @bind:event="oninput" style="font-size: 0.95rem;" />
-                    </div>
-                    <div class="table-responsive" style="max-height: 400px;">
-                        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
-                            <thead class="table-light">
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-main sticky-top">
+                            <tr>
+                                <th class="fw-semibold text-title">ID</th>
+                                <th class="fw-semibold text-title">Username</th>
+                                <th class="fw-semibold text-title">Position</th>
+                                <th class="fw-semibold text-title text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var filtered = allUsersList.Where(x => 
+                                    x.Username.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) || 
+                                    x.Id.Contains(searchQuery));
+                            }
+                            @if (!filtered.Any())
+                            {
                                 <tr>
-                                    <th class="fw-semibold">ID</th>
-                                    <th class="fw-semibold">Username</th>
-                                    <th class="fw-semibold">Position</th>
-                                    <th class="fw-semibold text-center">Action</th>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        <p class="mb-0">No users found</p>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @{
-                                    var list = showUserLookup ? allUsersList : supLookupList;
-                                    var filtered = list.Where(x => x.Username.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) || x.Id.Contains(searchQuery));
-                                }
+                            }
+                            else
+                            {
                                 @foreach (var item in filtered)
                                 {
                                     <tr>
-                                        <td class="fw-semibold" style="color: #0ea5e9;">@item.Id</td>
-                                        <td>@item.Username</td>
-                                        <td><span class="badge rounded-pill" style="background: #64748b;">@item.PositionName</span></td>
+                                        <td class="fw-semibold text-primary">@item.Id</td>
+                                        <td class="text-body">@item.Username</td>
+                                        <td>
+                                            <span class="badge bg-primary rounded-pill">@item.PositionName</span>
+                                        </td>
                                         <td class="text-center">
-                                            @if (showUserLookup) {
-                                                <button class="btn btn-sm text-white px-3" 
-                                                        @onclick="() => SelectUserToEdit(item.Id)"
-                                                        style="background: #0ea5e9; border: none;">
-                                                    <i class="bi bi-pencil-square me-1"></i>Edit
-                                                </button>
-                                            } else {
-                                                <button class="btn btn-sm text-white px-3" 
-                                                        @onclick="() => SelectSup(item)"
-                                                        style="background: #64748b; border: none;">
-                                                    <i class="bi bi-check-lg me-1"></i>Select
-                                                </button>
-                                            }
+                                            <button class="btn btn-sm btn-primary px-3" 
+                                                    @onclick="() => SelectUserToEdit(item.Id)">
+                                                <i class="bi bi-pencil-square me-1"></i>Edit
+                                            </button>
                                         </td>
                                     </tr>
                                 }
-                            </tbody>
-                        </table>
-                    </div>
+                            }
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Supervisor Lookup Modal -->
+<div class="modal fade @(showSupLookup ? "show" : "")" tabindex="-1" 
+     style="display: @(showSupLookup ? "block" : "none");">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header text-white border-0" style="background-color: var(--bs-secondary);">
+                <h5 class="modal-title fw-semibold">
+                    <i class="bi bi-search me-2"></i>Select Supervisor (Officer)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="CloseModals"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-main border-custom">
+                        <i class="bi bi-funnel text-primary"></i>
+                    </span>
+                    <input type="text" class="form-control border-custom" 
+                           placeholder="Search by name or ID..." 
+                           @bind="searchQuery" @bind:event="oninput" />
+                </div>
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-main sticky-top">
+                            <tr>
+                                <th class="fw-semibold text-title">ID</th>
+                                <th class="fw-semibold text-title">Username</th>
+                                <th class="fw-semibold text-title">Position</th>
+                                <th class="fw-semibold text-title text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var filteredSup = supLookupList.Where(x => 
+                                    x.Username.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) || 
+                                    x.Id.Contains(searchQuery));
+                            }
+                            @if (!filteredSup.Any())
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        <p class="mb-0">No supervisors found</p>
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var item in filteredSup)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold text-primary">@item.Id</td>
+                                        <td class="text-body">@item.Username</td>
+                                        <td>
+                                            <span class="badge rounded-pill" style="background-color: var(--bs-secondary);">
+                                                @item.PositionName
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm text-white px-3" 
+                                                    @onclick="() => SelectSup(item)"
+                                                    style="background-color: var(--bs-secondary);">
+                                                <i class="bi bi-check-lg me-1"></i>Select
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Submit Confirmation Modal -->
+<div class="modal fade @(showSubmitModal ? "show" : "")" tabindex="-1" 
+     style="display: @(showSubmitModal ? "block" : "none");">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-title">
+                    <i class="bi bi-question-circle text-primary me-2"></i>Confirm @(isEditMode ? "Update" : "Submission")
+                </h5>
+                <button type="button" class="btn-close" @onclick="() => showSubmitModal = false"></button>
+            </div>
+            <div class="modal-body text-body">
+                <p class="mb-0">Are you sure you want to @(isEditMode ? "update" : "create") this user?</p>
+                <div class="bg-main rounded-3 p-3 mt-3">
+                    <small class="text-muted d-block mb-1">User Details:</small>
+                    <ul class="list-unstyled mb-0 small">
+                        <li><strong>ID:</strong> @displayId</li>
+                        <li><strong>Username:</strong> @reqDto.Username</li>
+                        <li><strong>Position:</strong> @reqDto.PositionName</li>
+                        <li><strong>Supervisor:</strong> @selectedSupName</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary border-custom" @onclick="() => showSubmitModal = false">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success-custom" @onclick="HandleSubmit">
+                    <i class="bi bi-check-circle me-1"></i>Yes, @(isEditMode ? "Update" : "Submit")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade @(showDeleteModal ? "show" : "")" tabindex="-1" 
+     style="display: @(showDeleteModal ? "block" : "none");">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-card">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-title">
+                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close" @onclick="() => showDeleteModal = false"></button>
+            </div>
+            <div class="modal-body text-body">
+                <p class="mb-2">Are you sure you want to delete this user?</p>
+                <div class="alert alert-danger border-0 mb-0">
+                    <small><i class="bi bi-info-circle me-1"></i>This action cannot be undone!</small>
+                </div>
+                <div class="bg-main rounded-3 p-3 mt-3">
+                    <small class="text-muted d-block mb-1">User to be deleted:</small>
+                    <ul class="list-unstyled mb-0 small">
+                        <li><strong>ID:</strong> @displayId</li>
+                        <li><strong>Username:</strong> @reqDto.Username</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary border-custom" @onclick="() => showDeleteModal = false">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger-custom" @onclick="HandleDelete">
+                    <i class="bi bi-trash me-1"></i>Yes, Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Backdrop -->
+@if (showSupLookup || showUserLookup || showSubmitModal || showDeleteModal)
+{
+    <div class="modal-backdrop fade show"></div>
 }
 
 @code {
@@ -244,9 +441,12 @@
     private bool isEditMode = false;
     private bool showSupLookup = false;
     private bool showUserLookup = false;
+    private bool showSubmitModal = false;
+    private bool showDeleteModal = false;
     private bool hasAttemptedSubmit = false;
     private string searchQuery = "";
     private string? alertMessage;
+    private string? successMessage;
     private string selectedSupName = "";
     private string selectedSupPos = "";
     private bool isUser = false;
@@ -259,7 +459,7 @@
             
             isUser = AuthState.CurrentUser?.RoleId == 2;
             if(isUser)
-            NavigationManager.NavigateTo("/dashboard", true);
+                NavigationManager.NavigateTo("/dashboard", true);
             
             StateHasChanged();
         }
@@ -311,6 +511,18 @@
 
     private async Task GenerateNextId() => displayId = await IdGeneratorUtil.GetNextFormattedUserId(DbContext, false);
 
+    private void OpenUserLookupModal()
+    {
+        showUserLookup = true;
+        searchQuery = "";
+    }
+
+    private void OpenSupervisorLookupModal()
+    {
+        showSupLookup = true;
+        searchQuery = "";
+    }
+
     private async Task SelectUserToEdit(string id)
     {
         CloseModals();
@@ -339,30 +551,59 @@
         CloseModals();
     }
 
-    private void CloseModals() { showSupLookup = false; showUserLookup = false; searchQuery = ""; }
+    private void CloseModals() 
+    { 
+        showSupLookup = false; 
+        showUserLookup = false; 
+        searchQuery = ""; 
+    }
 
-    private async Task HandleSubmit()
+    private void ShowSubmitConfirmation()
     {
         hasAttemptedSubmit = true;
         alertMessage = null;
 
-        if (string.IsNullOrWhiteSpace(reqDto.Username) || reqDto.PositionId == 0 || string.IsNullOrWhiteSpace(reqDto.PositionName) || string.IsNullOrWhiteSpace(reqDto.SupervisorId))
+        // Validate all required fields
+        if (string.IsNullOrWhiteSpace(reqDto.Username) || 
+            reqDto.PositionId == 0 || 
+            string.IsNullOrWhiteSpace(reqDto.PositionName) || 
+            string.IsNullOrWhiteSpace(reqDto.SupervisorId))
         {
-            alertMessage = "Please complete all required fields.";
+            alertMessage = "Please complete all required fields before submitting.";
             return;
         }
+
+        showSubmitModal = true;
+    }
+
+    private async Task HandleSubmit()
+    {
+        showSubmitModal = false;
+        alertMessage = null;
+        successMessage = null;
 
         try 
         {
             reqDto.RoleId = 2;
             reqDto.PasswordHash = ""; 
 
-            if (isEditMode) await UserService.UpdateUser(currentUserId!, reqDto, reqDto.SupervisorId);
-            else await UserService.CreateUser(reqDto);
+            if (isEditMode)
+            {
+                await UserService.UpdateUser(currentUserId!, reqDto, reqDto.SupervisorId);
+                successMessage = "User updated successfully!";
+            }
+            else
+            {
+                await UserService.CreateUser(reqDto);
+                successMessage = "User created successfully!";
+            }
             
             NavigationManager.NavigateTo("/users");
         }
-        catch (Exception ex) { alertMessage = "Error: " + ex.Message; }
+        catch (Exception ex) 
+        { 
+            alertMessage = "Error: " + ex.Message; 
+        }
     }
 
     private async Task ResetForm()
@@ -370,20 +611,33 @@
         isEditMode = false;
         hasAttemptedSubmit = false;
         alertMessage = null;
+        successMessage = null;
         currentUserId = null;
         reqDto = new UserRequestDTO();
         selectedSupName = "";
         selectedSupPos = "";
         await GenerateNextId();
-        NavigationManager.NavigateTo("/users/form");
+        NavigationManager.NavigateTo("/users/form", true);
+    }
+
+    private void ShowDeleteConfirmation()
+    {
+        showDeleteModal = true;
     }
 
     private async Task HandleDelete()
     {
-        if (await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this user?"))
+        showDeleteModal = false;
+        
+        try
         {
             await UserService.DeleteUser(currentUserId!);
+            successMessage = "User deleted successfully!";
             NavigationManager.NavigateTo("/users");
+        }
+        catch (Exception ex)
+        {
+            alertMessage = "Error deleting user: " + ex.Message;
         }
     }
 }

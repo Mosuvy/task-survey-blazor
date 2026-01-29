@@ -38,9 +38,12 @@
             <!-- Master Data Menu -->
             <li class="nav-item">
                 <div class="nav-dropdown">
-                    <button class="nav-link d-flex align-items-center justify-content-between w-100 border-0 bg-transparent px-3 py-3 rounded-3 @(isMasterOpen ? "" : "collapsed") @(IsAnyMasterItemActive() ? "active" : "")" 
+                    <button class="nav-link d-flex align-items-center justify-content-between w-100 border-0 bg-transparent px-3 py-3 rounded-3 @(IsAnyMasterItemActive() ? "active" : "")" 
                             type="button"
-                            @onclick="() => ToggleMaster()">
+                            data-bs-toggle="collapse"
+                            data-bs-target="#masterDataCollapse"
+                            aria-expanded="@isMasterOpen.ToString().ToLower()"
+                            aria-controls="masterDataCollapse">
                         <div class="d-flex align-items-center gap-3">
                             <div class="icon-wrapper">
                                 <i class="bi bi-grid-fill fs-5"></i>
@@ -49,20 +52,23 @@
                         </div>
                         <i class="bi bi-chevron-down transition-icon"></i>
                     </button>
-                    <div class="submenu-collapse @(isMasterOpen ? "show" : "")">
+                    <div class="collapse @(isMasterOpen ? "show" : "")" id="masterDataCollapse">
                         <div class="submenu">
                             <!-- Users Menu -->
                             <div class="nav-dropdown mb-2">
-                                <button class="submenu-parent-link d-flex align-items-center justify-content-between w-100 border-0 bg-transparent px-4 py-2 rounded-3 ms-3 @(isUsersOpen ? "" : "collapsed") @(IsUsersActive() ? "active-submenu" : "")" 
+                                <button class="submenu-parent-link d-flex align-items-center justify-content-between w-100 border-0 bg-transparent px-4 py-2 rounded-3 ms-3 @(IsUsersActive() ? "active-submenu" : "")" 
                                         type="button"
-                                        @onclick="() => ToggleUsers()">
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#usersCollapse"
+                                        aria-expanded="@isUsersOpen.ToString().ToLower()"
+                                        aria-controls="usersCollapse">
                                     <div class="d-flex align-items-center gap-2">
                                         <i class="bi bi-people-fill" style="font-size: 0.95rem; color: var(--bs-primary);"></i>
                                         <span class="fw-semibold">Users</span>
                                     </div>
                                     <i class="bi bi-chevron-down transition-icon-sm"></i>
                                 </button>
-                                <div class="inner-submenu-collapse @(isUsersOpen ? "show" : "")">
+                                <div class="collapse @(isUsersOpen ? "show" : "")" id="usersCollapse">
                                     <div class="inner-submenu">
                                         <NavLink class="submenu-link d-flex align-items-center gap-2 px-4 py-2 rounded-3 ms-5" 
                                                  href="/users"
@@ -86,16 +92,19 @@
 
                             <!-- Templates Menu (Available for Both Roles) -->
                             <div class="nav-dropdown mb-2">
-                                <button class="submenu-parent-link d-flex align-items-center justify-content-between w-100 border-0 bg-transparent px-4 py-2 rounded-3 ms-3 @(isTemplatesOpen ? "" : "collapsed") @(IsTemplatesActive() ? "active-submenu" : "")" 
+                                <button class="submenu-parent-link d-flex align-items-center justify-content-between w-100 border-0 bg-transparent px-4 py-2 rounded-3 ms-3 @(IsTemplatesActive() ? "active-submenu" : "")" 
                                         type="button"
-                                        @onclick="() => ToggleTemplates()">
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#templatesCollapse"
+                                        aria-expanded="@isTemplatesOpen.ToString().ToLower()"
+                                        aria-controls="templatesCollapse">
                                     <div class="d-flex align-items-center gap-2">
                                         <i class="bi bi-file-earmark-text-fill" style="font-size: 0.95rem; color: var(--bs-primary);"></i>
                                         <span class="fw-semibold">Templates</span>
                                     </div>
                                     <i class="bi bi-chevron-down transition-icon-sm"></i>
                                 </button>
-                                <div class="inner-submenu-collapse @(isTemplatesOpen ? "show" : "")">
+                                <div class="collapse @(isTemplatesOpen ? "show" : "")" id="templatesCollapse">
                                     <div class="inner-submenu">
                                         <NavLink class="submenu-link d-flex align-items-center gap-2 px-4 py-2 rounded-3 ms-5" 
                                                  href="/templates"
@@ -115,16 +124,19 @@
 
                             <!-- Surveys Menu -->
                             <div class="nav-dropdown">
-                                <button class="submenu-parent-link d-flex align-items-center justify-content-between w-100 border-0 bg-transparent px-4 py-2 rounded-3 ms-3 @(isSurveysOpen ? "" : "collapsed") @(IsSurveysActive() ? "active-submenu" : "")" 
+                                <button class="submenu-parent-link d-flex align-items-center justify-content-between w-100 border-0 bg-transparent px-4 py-2 rounded-3 ms-3 @(IsSurveysActive() ? "active-submenu" : "")" 
                                         type="button"
-                                        @onclick="() => ToggleSurveys()">
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#surveysCollapse"
+                                        aria-expanded="@isSurveysOpen.ToString().ToLower()"
+                                        aria-controls="surveysCollapse">
                                     <div class="d-flex align-items-center gap-2">
                                         <i class="bi bi-clipboard-data-fill" style="font-size: 0.95rem; color: var(--bs-primary);"></i>
                                         <span class="fw-semibold">Surveys</span>
                                     </div>
                                     <i class="bi bi-chevron-down transition-icon-sm"></i>
                                 </button>
-                                <div class="inner-submenu-collapse @(isSurveysOpen ? "show" : "")">
+                                <div class="collapse @(isSurveysOpen ? "show" : "")" id="surveysCollapse">
                                     <div class="inner-submenu">
                                         <NavLink class="submenu-link d-flex align-items-center gap-2 px-4 py-2 rounded-3 ms-5" 
                                                  href="/surveys"
@@ -205,20 +217,6 @@
         color: white;
     }
 
-    .submenu-collapse, .inner-submenu-collapse {
-        overflow: hidden;
-        transition: max-height 0.35s ease;
-        max-height: 0;
-    }
-
-    .submenu-collapse.show {
-        max-height: 600px;
-    }
-
-    .inner-submenu-collapse.show {
-        max-height: 200px;
-    }
-
     .submenu {
         padding: 0.5rem 0;
     }
@@ -281,6 +279,7 @@
         font-size: 0.85rem;
     }
 
+    /* Bootstrap akan otomatis menambahkan class 'collapsed' pada button yang collapse-nya tertutup */
     button:not(.collapsed) .transition-icon,
     button:not(.collapsed) .transition-icon-sm {
         transform: rotate(180deg);
@@ -385,26 +384,6 @@
         {
             NavigationManager.NavigateTo("/login", true);
         }
-    }
-
-    private void ToggleMaster()
-    {
-        isMasterOpen = !isMasterOpen;
-    }
-
-    private void ToggleUsers()
-    {
-        isUsersOpen = !isUsersOpen;
-    }
-
-    private void ToggleTemplates()
-    {
-        isTemplatesOpen = !isTemplatesOpen;
-    }
-
-    private void ToggleSurveys()
-    {
-        isSurveysOpen = !isSurveysOpen;
     }
 
     private bool IsAnyMasterItemActive()

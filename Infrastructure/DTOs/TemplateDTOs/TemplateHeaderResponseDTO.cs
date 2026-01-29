@@ -11,7 +11,7 @@ namespace TaskSurvey.Infrastructure.DTOs.TemplateDTOs
         public required string Id { get; set; }
         public required string TemplateName { get; set; }
         public int PositionId { get; set; }
-        public virtual PositionResponseDTO? Position { get; set; }
+        public PositionResponseDTO? Position { get; set; }
         public required string Theme { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

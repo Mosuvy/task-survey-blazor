@@ -13,9 +13,9 @@ namespace TaskSurvey.Infrastructure.DTOs.SurveyDTOs
         public int Id { get; set; }
         [Required]
         public string DocumentSurveyId { get; set; } = null!;
-        public virtual SurveyHeaderResponseDTO? DocumentSurvey { get; set; }
+        public SurveyHeaderResponseDTO? DocumentSurvey { get; set; }
         public int? TemplateItemId { get; set; }
-        public virtual TemplateItemResponseDTO? TemplateItem { get; set; }
+        public TemplateItemResponseDTO? TemplateItem { get; set; }
         [Required]
         public string Answer { get; set; } = null!;
         public int OrderNo { get; set; }

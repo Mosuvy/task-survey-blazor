@@ -10,52 +10,52 @@
 
 <PageTitle>User Management</PageTitle>
 
-<div class="container-fluid px-4 py-4">
+<div class="container-fluid px-4 py-4 bg-main" style="min-height: 100vh;">
     <!-- Header Section -->
     <div class="row mb-4">
         <div class="col">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h3 class="fw-bold text-dark mb-1">User Management</h3>
+                    <h3 class="fw-bold text-title mb-1">User Management</h3>
                     <p class="text-muted mb-0" style="font-size: 0.9rem;">Manage and organize system users</p>
                 </div>
-                @if (isSupervisor){
-                <button class="btn text-white shadow-sm px-4" @onclick='() => NavigationManager.NavigateTo("/users/form")'
-                        style="background: #0ea5e9; border: none;">
-                    <i class="bi bi-plus-circle me-2"></i>Add User
-                </button>
+                @if (isSupervisor)
+                {
+                    <button class="btn btn-primary text-white shadow-sm px-4" @onclick='() => NavigationManager.NavigateTo("/users/form")'>
+                        <i class="bi bi-plus-circle me-2"></i>Add User
+                    </button>
                 }
             </div>
         </div>
     </div>
 
     <!-- Filter Section -->
-    <div class="card border-0 shadow-sm rounded-3 mb-3">
+    <div class="card border-custom shadow-sm rounded-3 mb-3 bg-card">
         <div class="card-body p-3">
             <div class="row g-3">
                 <div class="col-md-5">
-                    <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.85rem;">
-                        <i class="bi bi-search me-1" style="color: #0ea5e9;"></i>Search User
+                    <label class="form-label fw-semibold text-title mb-1" style="font-size: 0.85rem;">
+                        <i class="bi bi-search me-1 text-primary"></i>Search User
                     </label>
-                    <input type="text" class="form-control" placeholder="Search by name or ID..." 
+                    <input type="text" class="form-control border-custom" placeholder="Search by name or ID..." 
                            @bind="searchQuery" @bind:event="oninput" @onkeyup="ApplyFilters" 
                            style="font-size: 0.95rem;" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.85rem;">
-                        <i class="bi bi-funnel me-1" style="color: #0ea5e9;"></i>Role
+                    <label class="form-label fw-semibold text-title mb-1" style="font-size: 0.85rem;">
+                        <i class="bi bi-funnel me-1 text-primary"></i>Role
                     </label>
-                    <select class="form-select" @onchange="OnRoleFilterChanged" style="font-size: 0.95rem;">
+                    <select class="form-select border-custom" @onchange="OnRoleFilterChanged" style="font-size: 0.95rem;">
                         <option value="0">All Roles</option>
                         <option value="1">Supervisor</option>
                         <option value="2">User</option>
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.85rem;">
-                        <i class="bi bi-diagram-3 me-1" style="color: #0ea5e9;"></i>Position Level
+                    <label class="form-label fw-semibold text-title mb-1" style="font-size: 0.85rem;">
+                        <i class="bi bi-diagram-3 me-1 text-primary"></i>Position Level
                     </label>
-                    <select class="form-select" @onchange="OnPositionFilterChanged" style="font-size: 0.95rem;">
+                    <select class="form-select border-custom" @onchange="OnPositionFilterChanged" style="font-size: 0.95rem;">
                         <option value="0">All Positions</option>
                         @foreach (var p in positions)
                         {
@@ -70,45 +70,45 @@
     <!-- Stats Cards -->
     <div class="row g-3 mb-3">
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-3 h-100">
+            <div class="card border-custom shadow-sm rounded-3 h-100 bg-card">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center">
-                        <div class="text-white p-2 rounded me-3" style="background: #0ea5e9;">
+                        <div class="bg-primary text-white p-2 rounded me-3">
                             <i class="bi bi-people-fill fs-4"></i>
                         </div>
                         <div>
                             <p class="text-muted mb-0" style="font-size: 0.85rem;">Total Users</p>
-                            <h4 class="fw-bold mb-0">@users.Count</h4>
+                            <h4 class="fw-bold mb-0 text-title">@users.Count</h4>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-3 h-100">
+            <div class="card border-custom shadow-sm rounded-3 h-100 bg-card">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center">
-                        <div class="text-white p-2 rounded me-3" style="background: #10b981;">
+                        <div class="text-white p-2 rounded me-3 badge-success-custom">
                             <i class="bi bi-person-badge-fill fs-4"></i>
                         </div>
                         <div>
                             <p class="text-muted mb-0" style="font-size: 0.85rem;">Supervisors</p>
-                            <h4 class="fw-bold mb-0">@users.Count(u => u.RoleId == 1)</h4>
+                            <h4 class="fw-bold mb-0 text-title">@users.Count(u => u.RoleId == 1)</h4>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-3 h-100">
+            <div class="card border-custom shadow-sm rounded-3 h-100 bg-card">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center">
-                        <div class="text-white p-2 rounded me-3" style="background: #64748b;">
+                        <div class="text-white p-2 rounded me-3" style="background-color: var(--bs-secondary);">
                             <i class="bi bi-person-fill fs-4"></i>
                         </div>
                         <div>
                             <p class="text-muted mb-0" style="font-size: 0.85rem;">Regular Users</p>
-                            <h4 class="fw-bold mb-0">@users.Count(u => u.RoleId == 2)</h4>
+                            <h4 class="fw-bold mb-0 text-title">@users.Count(u => u.RoleId == 2)</h4>
                         </div>
                     </div>
                 </div>
@@ -117,13 +117,13 @@
     </div>
 
     <!-- Users Table -->
-    <div class="card border-0 shadow-sm rounded-3">
-        <div class="card-header bg-white py-3 px-3 border-bottom">
+    <div class="card border-custom shadow-sm rounded-3 bg-card">
+        <div class="card-header bg-card py-3 px-3 border-bottom border-custom">
             <div class="d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-table me-2" style="color: #0ea5e9;"></i>User List
+                <h6 class="mb-0 fw-semibold text-title">
+                    <i class="bi bi-table me-2 text-primary"></i>User List
                 </h6>
-                <span class="badge rounded-pill" style="background: #0ea5e9; font-size: 0.85rem;">
+                <span class="badge bg-primary rounded-pill" style="font-size: 0.85rem;">
                     @filteredUsers.Count Results
                 </span>
             </div>
@@ -131,17 +131,17 @@
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
-                    <thead style="background: #f8f9fa;">
+                    <thead class="bg-main">
                         <tr>
-                            <th class="py-3 px-3 fw-semibold text-dark">ID</th>
-                            <th class="py-3 px-3 fw-semibold text-dark">Username</th>
-                            <th class="py-3 px-3 fw-semibold text-dark">Position Level</th>
-                            <th class="py-3 px-3 fw-semibold text-dark">Position Name</th>
-                            <th class="py-3 px-3 fw-semibold text-dark">Role</th>
-                            <th class="py-3 px-3 fw-semibold text-dark">Supervisor</th>
+                            <th class="py-3 px-3 fw-semibold text-title">ID</th>
+                            <th class="py-3 px-3 fw-semibold text-title">Username</th>
+                            <th class="py-3 px-3 fw-semibold text-title">Position Level</th>
+                            <th class="py-3 px-3 fw-semibold text-title">Position Name</th>
+                            <th class="py-3 px-3 fw-semibold text-title">Role</th>
+                            <th class="py-3 px-3 fw-semibold text-title">Supervisor</th>
                             @if (isSupervisor)
                             {
-                            <th class="py-3 px-3 fw-semibold text-dark text-center">Actions</th>
+                                <th class="py-3 px-3 fw-semibold text-title text-center">Actions</th>
                             }
                         </tr>
                     </thead>
@@ -161,24 +161,25 @@
                             {
                                 <tr>
                                     <td class="px-3 py-3">
-                                        <span class="fw-semibold" style="color: #0ea5e9;">@user.Id</span>
+                                        <span class="fw-semibold text-primary">@user.Id</span>
                                     </td>
                                     <td class="px-3 py-3">
                                         <div class="d-flex align-items-center">
-                                            <div class="bg-light rounded-circle p-2 me-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
-                                                <i class="bi bi-person-fill" style="color: #0ea5e9;"></i>
+                                            <div class="bg-main rounded-circle p-2 me-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="bi bi-person-fill text-primary"></i>
                                             </div>
-                                            <span class="fw-semibold">@user.Username</span>
+                                            <span class="fw-semibold text-body">@user.Username</span>
                                         </div>
                                     </td>
                                     <td class="px-3 py-3">
-                                        <span class="badge rounded-pill" style="background: #0ea5e9;">
+                                        <span class="badge bg-primary rounded-pill">
                                             @user.Position?.PositionLevel
                                         </span>
                                     </td>
-                                    <td class="px-3 py-3">@user.PositionName</td>
+                                    <td class="px-3 py-3 text-body">@user.PositionName</td>
                                     <td class="px-3 py-3">
-                                        <span class="badge rounded-pill" style="background: @(user.RoleId == 1 ? "#10b981" : "#64748b");">
+                                        <span class="badge rounded-pill @(user.RoleId == 1 ? "badge-success-custom" : "")" 
+                                              style="@(user.RoleId == 2 ? "background-color: var(--bs-secondary);" : "")">
                                             @user.Role?.RoleName
                                         </span>
                                     </td>
@@ -192,13 +193,13 @@
                                             <span class="text-muted small">-</span>
                                         }
                                     </td>
-                                    @if (isSupervisor){
-                                    <td class="px-3 py-3 text-center">
-                                        <button class="btn btn-sm text-white px-3" @onclick="() => EditUser(user.Id)"
-                                                style="background: #0ea5e9; border: none;">
-                                            <i class="bi bi-pencil-square me-1"></i>Edit
-                                        </button>
-                                    </td>
+                                    @if (isSupervisor)
+                                    {
+                                        <td class="px-3 py-3 text-center">
+                                            <button class="btn btn-sm btn-primary text-white px-3" @onclick="() => EditUser(user.Id)">
+                                                <i class="bi bi-pencil-square me-1"></i>Edit
+                                            </button>
+                                        </td>
                                     }
                                 </tr>
                             }
@@ -220,6 +221,7 @@
     private int selectedPosId = 0;
     private bool isSupervisor = false;
     private bool isUser = false;
+    
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
