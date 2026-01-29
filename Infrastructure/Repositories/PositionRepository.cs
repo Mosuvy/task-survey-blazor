@@ -11,20 +11,22 @@ namespace TaskSurvey.Infrastructure.Repositories
 {
     public class PositionRepository : IPositionRepository
     {
-        private readonly AppDbContext _context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-        public PositionRepository(AppDbContext context)
+        public PositionRepository(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
         }
 
         public async Task<List<Position>> GetAllPositionAsync()
         {
-            return await _context.Positions.ToListAsync();
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Positions.ToListAsync();
         }
         public async Task<Position?> GetPositionByIdAsync(int id)
         {
-            return await _context.Positions.FindAsync(id);
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Positions.FindAsync(id);
         }
     }
 }

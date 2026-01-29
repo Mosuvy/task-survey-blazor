@@ -155,7 +155,7 @@ namespace TaskSurvey.Infrastructure.Data
             modelBuilder.Entity<User>().HasData(
                 new User
                 {
-                    Id = "00000001",
+                    Id = "10000001",
                     Username = "Wahyu Johan",
                     PasswordHash = password,
                     PositionId = 3,
@@ -166,7 +166,7 @@ namespace TaskSurvey.Infrastructure.Data
                 },
                 new User
                 {
-                    Id = "00000002",
+                    Id = "10000002",
                     Username = "Edi",
                     PasswordHash = password,
                     PositionId = 3,
@@ -177,7 +177,7 @@ namespace TaskSurvey.Infrastructure.Data
                 },
                 new User
                 {
-                    Id = "00000003",
+                    Id = "00000001",
                     Username = "Andhika",
                     PasswordHash = password,
                     PositionId = 1,
@@ -192,8 +192,8 @@ namespace TaskSurvey.Infrastructure.Data
                 new UserRelation
                 {
                     Id = 1,
-                    UserId = "00000003",
-                    SupervisorId = "00000001",
+                    UserId = "00000001",
+                    SupervisorId = "10000001",
                     CreatedAt = DateTime.Now
                 }
             );
@@ -257,7 +257,7 @@ namespace TaskSurvey.Infrastructure.Data
                 new DocumentSurvey
                 {
                     Id = "SURVEY/2601/0001",
-                    RequesterId = "00000003",
+                    RequesterId = "00000001",
                     Status = StatusType.Draft,
                     TemplateHeaderId = "TEMPLATE/2601/001",
                     CreatedAt = DateTime.Now,
@@ -287,7 +287,7 @@ namespace TaskSurvey.Infrastructure.Data
                     Question = "Fasilitas yang Anda gunakan:",
                     Type = QuestionType.CheckBox,
                     OrderNo = 2,
-                    Answer = "Selected",
+                    Answer = "",
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
                 }

@@ -101,5 +101,40 @@ namespace TaskSurvey.Infrastructure.Mappers
                 }).ToList()
             };
         }
+
+        public static DocumentSurvey ToEntityFromTemplate(TemplateHeader template, string surveyId, string requesterId, StatusType status)
+        {
+            return new DocumentSurvey
+            {
+                Id = surveyId,
+                RequesterId = requesterId,
+                TemplateHeaderId = template.Id,
+                UpdatedAtTemplate = template.UpdatedAt,
+                Status = status,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now,
+                
+                SurveyItems = template.Items?.Select(ti => new DocumentSurveyItem
+                {
+                    DocumentSurveyId = surveyId,
+                    TemplateItemId = ti.Id,
+                    Question = ti.Question,
+                    Type = ti.Type, 
+                    OrderNo = ti.OrderNo,
+                    Answer = "", 
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now,
+                    
+                    CheckBox = ti.ItemDetails?.Select(td => new DocumentItemDetail
+                    {
+                        TemplateItemDetailId = td.Id,
+                        Item = td.Item,
+                        IsChecked = false,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    }).ToList() ?? new List<DocumentItemDetail>()
+                }).ToList() ?? new List<DocumentSurveyItem>()
+            };
+        }
     }
 }

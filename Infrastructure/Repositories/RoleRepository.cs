@@ -11,20 +11,22 @@ namespace TaskSurvey.Infrastructure.Repositories
 {
     public class RoleRepository : IRoleRepository
     {
-        private readonly AppDbContext _context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-        public RoleRepository(AppDbContext context)
+        public RoleRepository(IDbContextFactory<AppDbContext> context)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _contextFactory = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public async Task<List<Role>> GetAllRoleAsync()
         {
-            return await _context.Roles.ToListAsync();
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Roles.ToListAsync();
         }
         public async Task<Role?> GetRoleByIdAsync(int id)
         {
-            return await _context.Roles.FindAsync(id);
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Roles.FindAsync(id);
         }
     }
 }

@@ -49,3 +49,99 @@ h1:focus {
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
 }
+
+:root {
+    --bs-primary: #4F46E5;
+    --bs-primary-rgb: 79, 70, 229;
+    
+    --bs-secondary: #64748B;
+    --bs-secondary-rgb: 100, 116, 139;
+    
+    --accent-success: #22C55E;
+    --accent-danger: #EF4444;
+    
+    --bg-main: #F4F6F8;
+    --bg-card: #FFFFFF;
+    
+    --text-title: #0F172A;
+    --text-body: #334155;
+    --text-muted: #94A3B8;
+    
+    --border-color: #E2E8F0;
+}
+
+.btn-primary {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.btn-primary:hover {
+    background-color: #4338CA;
+    border-color: #4338CA;
+}
+
+.bg-primary {
+    background-color: var(--bs-primary) !important;
+}
+
+.text-primary {
+    color: var(--bs-primary) !important;
+}
+
+.border-primary {
+    border-color: var(--bs-primary) !important;
+}
+
+.bg-main {
+    background-color: var(--bg-main) !important;
+}
+
+.bg-card {
+    background-color: var(--bg-card) !important;
+}
+
+.text-title {
+    color: var(--text-title) !important;
+}
+
+.text-body {
+    color: var(--text-body) !important;
+}
+
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+.border-custom {
+    border-color: var(--border-color) !important;
+}
+
+.btn-success-custom {
+    background-color: var(--accent-success);
+    border-color: var(--accent-success);
+    color: white;
+}
+
+.btn-success-custom:hover {
+    background-color: #16A34A;
+    border-color: #16A34A;
+}
+
+.btn-danger-custom {
+    background-color: var(--accent-danger);
+    border-color: var(--accent-danger);
+    color: white;
+}
+
+.btn-danger-custom:hover {
+    background-color: #DC2626;
+    border-color: #DC2626;
+}
+
+.badge-success-custom {
+    background-color: var(--accent-success) !important;
+}
+
+.badge-danger-custom {
+    background-color: var(--accent-danger) !important;
+}

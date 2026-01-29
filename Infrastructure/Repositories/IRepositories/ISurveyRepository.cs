@@ -13,9 +13,11 @@ namespace TaskSurvey.Infrastructure.Repositories.IRepositories
         Task<DocumentSurvey?> GetDocumentSurveyByIdAsync(string id);
         Task<List<DocumentSurvey>?> GetDocumentSurveyByUserIdAsync(string id);
         Task<List<DocumentSurvey>?> GetDocumentSurveyByStatusAsync(string status);
+        Task<List<DocumentSurvey>?> GetDocumentSurveyForSupervisorAsync(string id, string status);
         Task<DocumentSurvey> CreateDocumentSurveyAsync(DocumentSurvey documentSurvey);
         Task<DocumentSurvey?> UpdateDocumentSurveyAsync(string id, DocumentSurvey documentSurvey);
         Task<DocumentSurvey?> UpdateDocumentSurveyStatusAsync(string id, string status);
+        Task<DocumentSurvey?> UpdateDocumentSurveyFromLatestTemplate(string id, DocumentSurvey documentSurvey);
         Task<bool> DeleteDocumentSurveyAsync(string id);
     }
 }

@@ -12,9 +12,11 @@ namespace TaskSurvey.Infrastructure.Services.IServices
         Task<SurveyHeaderResponseDTO?> GetSurveyHeaderById(string id);
         Task<List<SurveyHeaderResponseDTO>?> GetSurveyHeaderByUserId(string id);
         Task<List<SurveyHeaderResponseDTO>?> GetSurveyHeaderByStatus(string status);
+        Task<List<SurveyHeaderResponseDTO>?> GetDocumentSurveyForSupervisor(string id, string status);
         Task<SurveyHeaderResponseDTO> CreateSurveyHeader(SurveyHeaderRequestDTO surveyHeaderRequestDTO);
         Task<SurveyHeaderResponseDTO?> UpdateSurveyHeader(string id, SurveyHeaderRequestDTO surveyHeaderRequestDTO);
         Task<SurveyHeaderResponseDTO?> UpdateSurveyHeaderStatus(string id, string status);
+        Task<SurveyHeaderResponseDTO?> UpdateSurveyHeaderFromLatestTemplate(string id, SurveyHeaderRequestDTO surveyHeaderRequestDTO);
         Task<bool> DeleteSurveyHeader(string id);
     }
 }

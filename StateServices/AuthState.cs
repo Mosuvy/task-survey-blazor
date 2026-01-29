@@ -19,8 +19,6 @@ namespace TaskSurvey.StateServices
         {
             _currentUser = user;
             _isAuthenticated = true;
-            Console.WriteLine(_currentUser.Username);
-            Console.WriteLine(_isAuthenticated);
             
             NotifyAuthStateChanged();
         }

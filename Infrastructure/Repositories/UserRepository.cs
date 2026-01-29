@@ -12,107 +12,169 @@ namespace TaskSurvey.Infrastructure.Repositories
 {
     public class UserRepository : IUserRepository
     {
-        private readonly AppDbContext _context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-        public UserRepository(AppDbContext context)
+        public UserRepository(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
         }
 
         public async Task<List<User>> GetAllUsersAsync()
         {
-            return await _context.Users.Include(p => p.Position).Include(r => r.Role)
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Users.Include(p => p.Position).Include(r => r.Role)
                 .Include(r => r.SupervisorRelations!).ThenInclude(s => s.Supervisor).ThenInclude(s => s!.Position)
                 .ToListAsync();
         }
         
         public async Task<User?> GetUserByIdAsync(string id)
         {
-            return await _context.Users.Include(p => p.Position).Include(r => r.Role)
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Users.Include(p => p.Position).Include(r => r.Role)
                 .Include(r => r.SupervisorRelations!).ThenInclude(s => s.Supervisor).ThenInclude(s => s!.Position)
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 
         public async Task<List<User>?> GetUserByRoleIdAsync(int id)
         {
-            var isRole = await _context.Roles.FindAsync(id);
-            if(isRole == null) return null;
-            return await _context.Users.Include(p => p.Position).Include(r => r.Role).Where(u => u.RoleId == id).ToListAsync();
+            using var context = await _contextFactory.CreateDbContextAsync();
+            var roleExists = await context.Roles.AnyAsync(r => r.Id == id);
+            if(!roleExists) return null;
+
+            return await context.Users.Include(p => p.Position).Include(r => r.Role)
+                .Where(u => u.RoleId == id).ToListAsync();
         }
 
         public async Task<List<User>?> GetUserByPositionIdAsync(int id)
         {
-            var isPosition = await _context.Positions.FindAsync(id);
-            if(isPosition == null) return null;
-            return await _context.Users.Include(p => p.Position).Include(r => r.Role).Where(u => u.PositionId == id).ToListAsync();
+            using var context = await _contextFactory.CreateDbContextAsync();
+            var positionExists = await context.Positions.AnyAsync(p => p.Id == id);
+            if(!positionExists) return null;
+
+            return await context.Users.Include(p => p.Position).Include(r => r.Role)
+                .Where(u => u.PositionId == id).ToListAsync();
         }
 
-        public async Task<User> CreateUserAsync(User user, string supervisor)
+        public async Task<User> CreateUserAsync(User user, string supervisorId)
         {
-            user.Id = await IdGeneratorUtil.GetNextFormattedUserId(_context);
-            // user.PasswordHash = PasswordUtil.HashPassword(user.PasswordHash);
-            user.PasswordHash = PasswordUtil.HashPassword("password");
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            using var context = await _contextFactory.CreateDbContextAsync();
+            using var transaction = await context.Database.BeginTransactionAsync();
 
-            var isSupervisor = await _context.Users.FirstOrDefaultAsync(s => s.Id == supervisor);
-            if(isSupervisor == null) return null!;
-
-            var relation = new UserRelation
+            try
             {
-                UserId = user.Id,
-                SupervisorId = supervisor,
-                CreatedAt = DateTime.Now
-            };
-            _context.UserRelations.Add(relation);
-            await _context.SaveChangesAsync();
-            return (await GetUserByIdAsync(user.Id))!;
-        }
+                user.Id = await IdGeneratorUtil.GetNextFormattedUserId(context, false);
+                user.PasswordHash = PasswordUtil.HashPassword("password");
+                user.CreatedAt = DateTime.Now;
 
-        public async Task<User?> UpdateUserAsync(string id, User user, string? supervisor)
-        {
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
-            if(existingUser == null) return null;
+                await context.Users.AddAsync(user);
+                await context.SaveChangesAsync();
 
-            existingUser.Username = user.Username;
-            if(!string.IsNullOrEmpty(user.PasswordHash)) 
-                existingUser.PasswordHash = PasswordUtil.HashPassword(user.PasswordHash);
-            existingUser.PositionId = user.PositionId;
-            existingUser.PositionName = user.PositionName;
-            existingUser.RoleId = user.RoleId;
-            existingUser.UpdatedAt = DateTime.Now;
+                var supervisor = await context.Users.AnyAsync(s => s.Id == supervisorId);
+                if (supervisor)
+                {
+                    var relation = new UserRelation
+                    {
+                        UserId = user.Id,
+                        SupervisorId = supervisorId,
+                        CreatedAt = DateTime.Now
+                    };
+                    await context.UserRelations.AddAsync(relation);
+                    await context.SaveChangesAsync();
+                }
 
-            if (!string.IsNullOrEmpty(supervisor))
-            {
-                var existingRelation = await _context.UserRelations.FirstOrDefaultAsync(u => u.UserId == id);
-                if(existingRelation != null) existingRelation.SupervisorId = supervisor;
+                await transaction.CommitAsync();
+                
+                return (await GetUserByIdAsync(user.Id))!;
             }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
 
-            await _context.SaveChangesAsync();
-            return await GetUserByIdAsync(existingUser.Id);
+        public async Task<User?> UpdateUserAsync(string id, User user, string? supervisorId)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var existingUser = await context.Users.FirstOrDefaultAsync(u => u.Id == id);
+                if (existingUser == null) return null;
+
+                existingUser.Username = user.Username;
+                if (!string.IsNullOrEmpty(user.PasswordHash)) 
+                    existingUser.PasswordHash = PasswordUtil.HashPassword(user.PasswordHash);
+                
+                existingUser.PositionId = user.PositionId;
+                existingUser.PositionName = user.PositionName;
+                existingUser.RoleId = user.RoleId;
+                existingUser.UpdatedAt = DateTime.Now;
+
+                if (!string.IsNullOrEmpty(supervisorId))
+                {
+                    var existingRelation = await context.UserRelations.FirstOrDefaultAsync(u => u.UserId == id);
+                    if (existingRelation != null)
+                    {
+                        existingRelation.SupervisorId = supervisorId;
+                    }
+                    else
+                    {
+                        await context.UserRelations.AddAsync(new UserRelation { 
+                            UserId = id, 
+                            SupervisorId = supervisorId, 
+                            CreatedAt = DateTime.Now 
+                        });
+                    }
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return await GetUserByIdAsync(existingUser.Id);
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<bool> DeleteUserAsync(string id)
         {
-            var user = await _context.Users
-                .Include(u => u.SupervisorRelations)
-                .Include(u => u.SubordinateRelations)
-                .FirstOrDefaultAsync(u => u.Id == id);
+            using var context = await _contextFactory.CreateDbContextAsync();
+            using var transaction = await context.Database.BeginTransactionAsync();
 
-            if (user == null) return false;
+            try
+            {
+                var user = await context.Users
+                    .Include(u => u.SupervisorRelations)
+                    .Include(u => u.SubordinateRelations)
+                    .FirstOrDefaultAsync(u => u.Id == id);
 
-            if (user.SupervisorRelations!.Any())
-            {
-                _context.UserRelations.RemoveRange(user.SupervisorRelations!);
+                if (user == null) return false;
+
+                if (user.SupervisorRelations != null && user.SupervisorRelations.Any())
+                {
+                    context.UserRelations.RemoveRange(user.SupervisorRelations);
+                }
+                
+                if (user.SubordinateRelations != null && user.SubordinateRelations.Any())
+                {
+                    context.UserRelations.RemoveRange(user.SubordinateRelations);
+                }
+
+                context.Users.Remove(user);
+                var result = await context.SaveChangesAsync() > 0;
+                
+                await transaction.CommitAsync();
+                return result;
             }
-            
-            if (user.SubordinateRelations!.Any())
+            catch (Exception)
             {
-                _context.UserRelations.RemoveRange(user.SubordinateRelations!);
+                await transaction.RollbackAsync();
+                return false;
             }
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-            return true;
         }
     }
 }

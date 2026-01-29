@@ -8,6 +8,8 @@
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
 @inject TaskSurvey.Infrastructure.Data.AppDbContext DbContext
+@inject AuthState AuthState
+@inject IJSRuntime JS
 
 <PageTitle>Form User</PageTitle>
 
@@ -247,6 +249,45 @@
     private string? alertMessage;
     private string selectedSupName = "";
     private string selectedSupPos = "";
+    private bool isUser = false;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadAuthStateFromSession();
+            
+            isUser = AuthState.CurrentUser?.RoleId == 2;
+            if(isUser)
+            NavigationManager.NavigateTo("/dashboard", true);
+            
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadAuthStateFromSession()
+    {
+        try
+        {
+            var userJson = await JS.InvokeAsync<string>("sessionStorage.getItem", "UserSession");
+            
+            if (!string.IsNullOrEmpty(userJson))
+            {
+                var user = JsonSerializer.Deserialize<User>(userJson);
+                if (user != null)
+                {
+                    AuthState.SetAuthenticationState(user);
+                    return;
+                }
+            }
+            
+            NavigationManager.NavigateTo("/login", true);
+        }
+        catch (Exception)
+        {
+            NavigationManager.NavigateTo("/login", true);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -268,7 +309,7 @@
     private string GetValidationClass(string? value) => 
         hasAttemptedSubmit && string.IsNullOrWhiteSpace(value) ? "is-invalid" : "";
 
-    private async Task GenerateNextId() => displayId = await IdGeneratorUtil.GetNextFormattedUserId(DbContext);
+    private async Task GenerateNextId() => displayId = await IdGeneratorUtil.GetNextFormattedUserId(DbContext, false);
 
     private async Task SelectUserToEdit(string id)
     {

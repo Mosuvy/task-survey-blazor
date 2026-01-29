@@ -12,10 +12,12 @@ namespace TaskSurvey.Infrastructure.Services
     public class SurveyService : ISurveyService
     {
         private readonly ISurveyRepository _repository;
+        private readonly ITemplateRepository _templaterepository;
 
-        public SurveyService(ISurveyRepository repository)
+        public SurveyService(ISurveyRepository repository, ITemplateRepository templaterepository)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _templaterepository = templaterepository ?? throw new ArgumentNullException(nameof(templaterepository));
         }
 
         public async Task<List<SurveyHeaderResponseDTO>> GetSurveyHeaders()
@@ -42,6 +44,12 @@ namespace TaskSurvey.Infrastructure.Services
             return data?.Select(SurveyMapper.ToSurveyResponseDTO).ToList();
         }
 
+        public async Task<List<SurveyHeaderResponseDTO>?> GetDocumentSurveyForSupervisor(string id, string status)
+        {
+            var data = await _repository.GetDocumentSurveyForSupervisorAsync(id, status);
+            return data?.Select(SurveyMapper.ToSurveyResponseDTO).ToList();
+        }
+
         public async Task<SurveyHeaderResponseDTO> CreateSurveyHeader(SurveyHeaderRequestDTO surveyHeaderRequestDTO)
         {
             var entity = SurveyMapper.ToEntity(surveyHeaderRequestDTO);
@@ -62,6 +70,18 @@ namespace TaskSurvey.Infrastructure.Services
         public async Task<SurveyHeaderResponseDTO?> UpdateSurveyHeaderStatus(string id, string status)
         {
             var result = await _repository.UpdateDocumentSurveyStatusAsync(id, status);
+            return result != null ? SurveyMapper.ToSurveyResponseDTO(result) : null;
+        }
+
+        public async Task<SurveyHeaderResponseDTO?> UpdateSurveyHeaderFromLatestTemplate(string id, SurveyHeaderRequestDTO request)
+        {
+            var latestTemplate = await _templaterepository.GetTemplateByIdAsync(request.TemplateHeaderId!);
+            if (latestTemplate == null) return null;
+
+            var blueprintEntity = SurveyMapper.ToEntityFromTemplate(latestTemplate, id, request.RequesterId, request.Status);
+
+            var result = await _repository.UpdateDocumentSurveyFromLatestTemplate(id, blueprintEntity);
+            
             return result != null ? SurveyMapper.ToSurveyResponseDTO(result) : null;
         }
 

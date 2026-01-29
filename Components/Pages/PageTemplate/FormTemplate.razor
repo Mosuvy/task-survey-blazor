@@ -11,6 +11,7 @@
 @inject IJSRuntime JS
 @inject IPositionService PositionService
 @inject NavigationManager NavigationManager
+@inject AuthState AuthState
 @inject TaskSurvey.Infrastructure.Data.AppDbContext DbContext
 <PageTitle>Form Template</PageTitle>
 
@@ -68,9 +69,12 @@
                             <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">
                                 <i class="bi bi-diagram-3 me-1" style="color: #0ea5e9;"></i>Position Level
                             </label>
-                            <select class="form-select" @bind="reqDto.PositionId" style="font-size: 0.95rem;">
+                            <select class="form-select" @bind="reqDto.PositionId" disabled="@(userPositionId != 0)">
                                 <option value="0">-- Select Position --</option>
-                                @foreach(var p in positions) { <option value="@p.Id">@p.PositionLevel</option> }
+                                @foreach(var p in positions) 
+                                { 
+                                    <option value="@p.Id">@p.PositionLevel</option> 
+                                }
                             </select>
                         </div>
 
@@ -320,20 +324,59 @@
     private bool isEditItem = false, isEditMode = false;
     private bool showItemModal = false, showLookupModal = false;
     private string searchQuery = "";
+    private int userPositionId = 0;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        positions = await PositionService.GetPositions();
-        allTemplates = await TemplateService.GetTemplateHeaders();
+        if (firstRender)
+        {
+            await LoadAuthStateFromSession();
+            
+            userPositionId = AuthState.CurrentUser?.PositionId ?? 0;
+            
+            if (!isEditMode) 
+            {
+                reqDto.PositionId = userPositionId;
+            }
 
-        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("templateId", out var id))
-        {
-            await SelectTemplate(id!);
+            positions = await PositionService.GetPositions();
+            allTemplates = await TemplateService.GetTemplateByPositionId(userPositionId) ?? new();
+
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+            if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("templateId", out var id))
+            {
+                await SelectTemplate(id!);
+            }
+            else
+            {
+                await GenerateNewId();
+            }
+
+            StateHasChanged();
         }
-        else
+    }
+
+    private async Task LoadAuthStateFromSession()
+    {
+        try
         {
-            await GenerateNewId();
+            var userJson = await JS.InvokeAsync<string>("sessionStorage.getItem", "UserSession");
+            
+            if (!string.IsNullOrEmpty(userJson))
+            {
+                var user = JsonSerializer.Deserialize<User>(userJson);
+                if (user != null)
+                {
+                    AuthState.SetAuthenticationState(user);
+                    return;
+                }
+            }
+            
+            NavigationManager.NavigateTo("/login", true);
+        }
+        catch (Exception)
+        {
+            NavigationManager.NavigateTo("/login", true);
         }
     }
 

@@ -13,19 +13,21 @@ namespace TaskSurvey.Infrastructure.Repositories
 {
     public class AuthRepository : IAuthRepository
     {
-        private readonly AppDbContext _context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-        public AuthRepository(AppDbContext context)
+        public AuthRepository(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
         }
 
         public async Task<User?> LoginAsync(LoginRequestDTO req)
         {
-            var userEntity = await _context.Users.FirstOrDefaultAsync(u => u.Username == req.Username);
+            using var context = await _contextFactory.CreateDbContextAsync();
+
+            var userEntity = await context.Users.Include(r => r.Role).FirstOrDefaultAsync(u => u.Username == req.Username);
             if(userEntity == null) return null!;
 
-            var isRoleExist = await _context.Roles.FindAsync(userEntity.RoleId);
+            var isRoleExist = await context.Roles.FindAsync(userEntity.RoleId);
             if(isRoleExist == null) return null!;
             
             var isPasswordValid = PasswordUtil.VerifyPassword(userEntity.PasswordHash, req.Password);

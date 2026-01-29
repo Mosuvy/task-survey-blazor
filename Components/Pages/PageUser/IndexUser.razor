@@ -5,6 +5,8 @@
 @inject IPositionService PositionService
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
+@inject AuthState AuthState
+@inject IJSRuntime JS
 
 <PageTitle>User Management</PageTitle>
 
@@ -17,10 +19,12 @@
                     <h3 class="fw-bold text-dark mb-1">User Management</h3>
                     <p class="text-muted mb-0" style="font-size: 0.9rem;">Manage and organize system users</p>
                 </div>
+                @if (isSupervisor){
                 <button class="btn text-white shadow-sm px-4" @onclick='() => NavigationManager.NavigateTo("/users/form")'
                         style="background: #0ea5e9; border: none;">
                     <i class="bi bi-plus-circle me-2"></i>Add User
                 </button>
+                }
             </div>
         </div>
     </div>
@@ -135,7 +139,10 @@
                             <th class="py-3 px-3 fw-semibold text-dark">Position Name</th>
                             <th class="py-3 px-3 fw-semibold text-dark">Role</th>
                             <th class="py-3 px-3 fw-semibold text-dark">Supervisor</th>
+                            @if (isSupervisor)
+                            {
                             <th class="py-3 px-3 fw-semibold text-dark text-center">Actions</th>
+                            }
                         </tr>
                     </thead>
                     <tbody>
@@ -185,12 +192,14 @@
                                             <span class="text-muted small">-</span>
                                         }
                                     </td>
+                                    @if (isSupervisor){
                                     <td class="px-3 py-3 text-center">
                                         <button class="btn btn-sm text-white px-3" @onclick="() => EditUser(user.Id)"
                                                 style="background: #0ea5e9; border: none;">
                                             <i class="bi bi-pencil-square me-1"></i>Edit
                                         </button>
                                     </td>
+                                    }
                                 </tr>
                             }
                         }
@@ -209,6 +218,44 @@
     private string searchQuery = "";
     private int selectedRoleId = 0;
     private int selectedPosId = 0;
+    private bool isSupervisor = false;
+    private bool isUser = false;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadAuthStateFromSession();
+            
+            isSupervisor = AuthState.CurrentUser?.RoleId == 1;
+            isUser = AuthState.CurrentUser?.RoleId == 2;
+            
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadAuthStateFromSession()
+    {
+        try
+        {
+            var userJson = await JS.InvokeAsync<string>("sessionStorage.getItem", "UserSession");
+            
+            if (!string.IsNullOrEmpty(userJson))
+            {
+                var user = JsonSerializer.Deserialize<User>(userJson);
+                if (user != null)
+                {
+                    AuthState.SetAuthenticationState(user);
+                    return;
+                }
+            }
+            
+            NavigationManager.NavigateTo("/login", true);
+        }
+        catch (Exception)
+        {
+            NavigationManager.NavigateTo("/login", true);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {

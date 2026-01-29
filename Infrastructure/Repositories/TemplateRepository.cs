@@ -12,16 +12,17 @@ namespace TaskSurvey.Infrastructure.Repositories
 {
     public class TemplateRepository : ITemplateRepository
     {
-        private readonly AppDbContext _context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-        public TemplateRepository(AppDbContext context)
+        public TemplateRepository(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
         }
 
         public async Task<List<TemplateHeader>> GetAllTemplateAsync()
         {
-            return await _context.TemplateHeaders
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.TemplateHeaders
                 .Include(h => h.Position)
                 .Include(h => h.Items!.OrderBy(i => i.OrderNo))
                     .ThenInclude(i => i.ItemDetails)
@@ -31,7 +32,8 @@ namespace TaskSurvey.Infrastructure.Repositories
 
         public async Task<TemplateHeader?> GetTemplateByIdAsync(string id)
         {
-            return await _context.TemplateHeaders
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.TemplateHeaders
                 .Include(h => h.Position)
                 .Include(h => h.Items!.OrderBy(i => i.OrderNo))
                     .ThenInclude(i => i.ItemDetails)
@@ -40,7 +42,8 @@ namespace TaskSurvey.Infrastructure.Repositories
 
         public async Task<List<TemplateHeader>?> GetTemplateByPositionIdAsync(int id)
         {
-            return await _context.TemplateHeaders
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.TemplateHeaders
                 .Include(h => h.Position)
                 .Include(h => h.Items!.OrderBy(i => i.OrderNo))
                     .ThenInclude(i => i.ItemDetails)
@@ -50,121 +53,151 @@ namespace TaskSurvey.Infrastructure.Repositories
 
         public async Task<TemplateHeader> CreateTemplateAsync(TemplateHeader templateHeader)
         {
-            templateHeader.Id = await IdGeneratorUtil.GenerateTemplateId(_context);
-            
-            templateHeader.CreatedAt = DateTime.Now;
-            templateHeader.UpdatedAt = DateTime.Now;
+            using var context = await _contextFactory.CreateDbContextAsync();
+            using var transaction = await context.Database.BeginTransactionAsync();
 
-            foreach (var item in templateHeader.Items!)
+            try
             {
-                item.CreatedAt = DateTime.Now;
-                item.UpdatedAt = DateTime.Now;
+                templateHeader.Id = await IdGeneratorUtil.GenerateTemplateId(context);
+                
+                templateHeader.CreatedAt = DateTime.Now;
+                templateHeader.UpdatedAt = DateTime.Now;
 
-                foreach (var detail in item.ItemDetails!)
+                foreach (var item in templateHeader.Items!)
                 {
-                    detail.CreatedAt = DateTime.Now;
-                    detail.UpdatedAt = DateTime.Now;
-                }
-            }
+                    item.CreatedAt = DateTime.Now;
+                    item.UpdatedAt = DateTime.Now;
 
-            _context.TemplateHeaders.Add(templateHeader);
-            await _context.SaveChangesAsync();
-            
-            return templateHeader;
+                    foreach (var detail in item.ItemDetails!)
+                    {
+                        detail.CreatedAt = DateTime.Now;
+                        detail.UpdatedAt = DateTime.Now;
+                    }
+                }
+
+                await context.TemplateHeaders.AddAsync(templateHeader);
+                await context.SaveChangesAsync();
+                
+                await transaction.CommitAsync();
+                return templateHeader;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<TemplateHeader?> UpdateTemplateAsync(string id, TemplateHeader templateHeader)
         {
-            var dbHeader = await _context.TemplateHeaders
-                .Include(h => h.Items!)
-                    .ThenInclude(i => i.ItemDetails)
-                .FirstOrDefaultAsync(h => h.Id == id);
+            using var context = await _contextFactory.CreateDbContextAsync();
+            using var transaction = await context.Database.BeginTransactionAsync();
 
-            if (dbHeader == null) return null;
-
-            dbHeader.TemplateName = templateHeader.TemplateName;
-            dbHeader.PositionId = templateHeader.PositionId;
-            dbHeader.Theme = templateHeader.Theme;
-            dbHeader.UpdatedAt = DateTime.Now;
-
-            var incomingIds = templateHeader.Items?.Select(i => i.Id).ToList() ?? new List<int>();
-
-            var toDelete = dbHeader.Items!.Where(di => !incomingIds.Contains(di.Id)).ToList();
-            foreach (var item in toDelete)
+            try
             {
-                _context.TemplateItems.Remove(item);
-            }
+                var dbHeader = await context.TemplateHeaders
+                    .Include(h => h.Items!)
+                        .ThenInclude(i => i.ItemDetails)
+                    .FirstOrDefaultAsync(h => h.Id == id);
 
-            foreach (var ri in templateHeader.Items ?? new List<TemplateItem>())
-            {
-                var existingItem = dbHeader.Items!.FirstOrDefault(di => di.Id == ri.Id && di.Id != 0);
+                if (dbHeader == null) return null;
 
-                if (existingItem != null)
+                dbHeader.TemplateName = templateHeader.TemplateName;
+                dbHeader.PositionId = templateHeader.PositionId;
+                dbHeader.Theme = templateHeader.Theme;
+                dbHeader.UpdatedAt = DateTime.Now;
+
+                var incomingIds = templateHeader.Items?.Select(i => i.Id).ToList() ?? new List<int>();
+
+                var toDelete = dbHeader.Items!.Where(di => !incomingIds.Contains(di.Id)).ToList();
+                context.TemplateItems.RemoveRange(toDelete);
+
+                foreach (var ri in templateHeader.Items ?? new List<TemplateItem>())
                 {
-                    existingItem.Question = ri.Question;
-                    existingItem.Type = ri.Type;
-                    existingItem.OrderNo = ri.OrderNo;
-                    existingItem.UpdatedAt = DateTime.Now;
+                    var existingItem = dbHeader.Items!.FirstOrDefault(di => di.Id == ri.Id && di.Id != 0);
 
-                    var incomingDetailIds = ri.ItemDetails?.Select(d => d.Id).ToList() ?? new List<int>();
-                    var detailsToDelete = existingItem.ItemDetails!.Where(ed => !incomingDetailIds.Contains(ed.Id)).ToList();
-                    foreach (var d in detailsToDelete) _context.TemplateItemDetails.Remove(d);
-
-                    foreach (var rd in ri.ItemDetails ?? new List<TemplateItemDetail>())
+                    if (existingItem != null)
                     {
-                        var ed = existingItem.ItemDetails!.FirstOrDefault(x => x.Id == rd.Id && x.Id != 0);
-                        if (ed != null) { ed.Item = rd.Item; }
-                        else {
-                            rd.Id = 0;
-                            rd.UpdatedAt = DateTime.Now;
-                            rd.CreatedAt = DateTime.Now;
-                            existingItem.ItemDetails!.Add(rd);
-                        }
-                    }
-                }
-                else
-                {
-                    ri.Id = 0; 
-                    if(ri.ItemDetails != null) {
-                        foreach(var d in ri.ItemDetails)
-                        {
-                            d.Id = 0;
-                            d.UpdatedAt = DateTime.Now;
-                            d.CreatedAt = DateTime.Now;   
-                        }
-                    }
-                    dbHeader.Items!.Add(ri);
-                }
-            }
+                        existingItem.Question = ri.Question;
+                        existingItem.Type = ri.Type;
+                        existingItem.OrderNo = ri.OrderNo;
+                        existingItem.UpdatedAt = DateTime.Now;
 
-            try {
-                await _context.SaveChangesAsync();
-            } catch (Exception ex) {
-                Console.WriteLine($"DB Error: {ex.Message}");
+                        var incomingDetailIds = ri.ItemDetails?.Select(d => d.Id).ToList() ?? new List<int>();
+                        var detailsToDelete = existingItem.ItemDetails!.Where(ed => !incomingDetailIds.Contains(ed.Id)).ToList();
+                        context.TemplateItemDetails.RemoveRange(detailsToDelete);
+
+                        foreach (var rd in ri.ItemDetails ?? new List<TemplateItemDetail>())
+                        {
+                            var ed = existingItem.ItemDetails!.FirstOrDefault(x => x.Id == rd.Id && x.Id != 0);
+                            if (ed != null) { ed.Item = rd.Item; }
+                            else {
+                                rd.Id = 0;
+                                rd.UpdatedAt = DateTime.Now;
+                                rd.CreatedAt = DateTime.Now;
+                                existingItem.ItemDetails!.Add(rd);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ri.Id = 0; 
+                        if(ri.ItemDetails != null) {
+                            foreach(var d in ri.ItemDetails)
+                            {
+                                d.Id = 0;
+                                d.UpdatedAt = DateTime.Now;
+                                d.CreatedAt = DateTime.Now;   
+                            }
+                        }
+                        dbHeader.Items!.Add(ri);
+                    }
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return dbHeader;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
                 throw;
             }
-            
-            return dbHeader;
         }
 
         public async Task<bool> DeleteTemplateAsync(string id)
         {
-            var header = await _context.TemplateHeaders
-                .Include(h => h.Items)
-                .FirstOrDefaultAsync(h => h.Id == id);
+            using var context = await _contextFactory.CreateDbContextAsync();
+            using var transaction = await context.Database.BeginTransactionAsync();
 
-            if (header == null) return false;
-            var relatedSurveys = await _context.DocumentSurveys
-                .Where(ds => ds.TemplateHeaderId == id)
-                .ToListAsync();
-
-            foreach (var survey in relatedSurveys)
+            try
             {
-                survey.TemplateHeaderId = null;
-            }
-            _context.TemplateHeaders.Remove(header);
+                var header = await context.TemplateHeaders
+                    .Include(h => h.Items)
+                    .FirstOrDefaultAsync(h => h.Id == id);
 
-            return await _context.SaveChangesAsync() > 0;
+                if (header == null) return false;
+
+                var relatedSurveys = await context.DocumentSurveys
+                    .Where(ds => ds.TemplateHeaderId == id)
+                    .ToListAsync();
+
+                foreach (var survey in relatedSurveys)
+                {
+                    survey.TemplateHeaderId = null;
+                }
+
+                context.TemplateHeaders.Remove(header);
+                var result = await context.SaveChangesAsync() > 0;
+                
+                await transaction.CommitAsync();
+                return result;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
         }
     }
 }

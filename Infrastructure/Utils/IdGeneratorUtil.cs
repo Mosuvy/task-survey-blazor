@@ -9,23 +9,36 @@ namespace TaskSurvey.Infrastructure.Utils
 {
     public class IdGeneratorUtil
     {
-        public static string FormatUserId(int numericId)
+        public static string FormatUserId(int numericId, bool isSupervisor)
         {
-            return numericId.ToString("D8");
+            string prefix = isSupervisor ? "1" : "0";
+            
+            return prefix + numericId.ToString("D7");
         }
 
-        public static async Task<string> GetNextFormattedUserId(AppDbContext context)
+        public static async Task<string> GetNextFormattedUserId(AppDbContext context, bool isSupervisor)
         {
-            var lastId = await context.Users
+            string prefixChar = isSupervisor ? "1" : "0";
+
+            var existingIds = await context.Users
+                .Where(u => u.Id.StartsWith(prefixChar))
                 .Select(u => u.Id)
                 .ToListAsync();
 
-            int maxId = lastId
-                .Select(id => int.TryParse(id, out int val) ? val : 0)
-                .DefaultIfEmpty(0)
-                .Max();
+            int maxId = 0;
 
-            return FormatUserId(maxId + 1);
+            if (existingIds.Any())
+            {
+                maxId = existingIds
+                    .Select(id => 
+                    {
+                        string suffix = id.Substring(1); 
+                        return int.TryParse(suffix, out int val) ? val : 0;
+                    })
+                    .Max();
+            }
+
+            return FormatUserId(maxId + 1, isSupervisor);
         }
 
         public static async Task<string> GenerateTemplateId(AppDbContext context)

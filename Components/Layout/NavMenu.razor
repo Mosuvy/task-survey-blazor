@@ -1,52 +1,160 @@
-﻿<div class="d-flex flex-column h-100" style="background: #f8f9fa;">
+﻿@using System.Text.Json
+@using TaskSurvey.Infrastructure.Models
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject TaskSurvey.StateServices.AuthState AuthState
+
+<div class="d-flex flex-column h-100" style="background: var(--bg-card);">
     <!-- Brand -->
-    <div class="p-3 border-bottom" style="background: #0ea5e9;">
-        <a class="navbar-brand text-white text-decoration-none d-flex align-items-center gap-2" href="/">
-            <i class="bi bi-clipboard-check fs-4"></i>
-            <span class="fw-bold fs-5">TaskSurvey</span>
+    <div class="p-4 border-bottom border-custom">
+        <a class="navbar-brand text-decoration-none d-flex align-items-center gap-3" href="/">
+            <div class="d-flex align-items-center justify-content-center rounded-3" 
+                 style="width: 45px; height: 45px; background: linear-gradient(135deg, var(--bs-primary) 0%, #6366F1 100%);">
+                <i class="bi bi-clipboard-check text-white fs-4"></i>
+            </div>
+            <div>
+                <div class="fw-bold fs-5 text-title">TaskSurvey</div>
+                <small class="text-muted" style="font-size: 0.75rem;">Survey Management</small>
+            </div>
         </a>
     </div>
 
     <!-- Navigation -->
-    <nav class="flex-fill p-3">
-        <ul class="nav flex-column gap-1">
+    <nav class="flex-fill p-3 overflow-auto">
+        <ul class="nav flex-column gap-2">
+            <!-- Dashboard -->
             <li class="nav-item">
-                <NavLink class="nav-link d-flex align-items-center gap-2 rounded-3 px-3 py-2" 
+                <NavLink class="nav-link d-flex align-items-center gap-3 rounded-3 px-3 py-3" 
                          href="/dashboard" 
                          Match="NavLinkMatch.All">
-                    <i class="bi bi-speedometer2 fs-5"></i>
+                    <div class="icon-wrapper">
+                        <i class="bi bi-speedometer2 fs-5"></i>
+                    </div>
                     <span class="fw-semibold">Dashboard</span>
                 </NavLink>
             </li>
 
+            <!-- Master Data Menu -->
             <li class="nav-item">
-                <NavLink class="nav-link d-flex align-items-center gap-2 rounded-3 px-3 py-2" 
-                         href="/users">
-                    <i class="bi bi-people-fill fs-5"></i>
-                    <span class="fw-semibold">Users</span>
-                </NavLink>
-            </li>
+                <div class="nav-dropdown">
+                    <button class="nav-link d-flex align-items-center justify-content-between w-100 border-0 bg-transparent px-3 py-3 rounded-3 @(isMasterOpen ? "" : "collapsed") @(IsAnyMasterItemActive() ? "active" : "")" 
+                            type="button"
+                            @onclick="() => ToggleMaster()">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="icon-wrapper">
+                                <i class="bi bi-grid-fill fs-5"></i>
+                            </div>
+                            <span class="fw-semibold">Master Data</span>
+                        </div>
+                        <i class="bi bi-chevron-down transition-icon"></i>
+                    </button>
+                    <div class="submenu-collapse @(isMasterOpen ? "show" : "")">
+                        <div class="submenu">
+                            <!-- Users Menu -->
+                            <div class="nav-dropdown mb-2">
+                                <button class="submenu-parent-link d-flex align-items-center justify-content-between w-100 border-0 bg-transparent px-4 py-2 rounded-3 ms-3 @(isUsersOpen ? "" : "collapsed") @(IsUsersActive() ? "active-submenu" : "")" 
+                                        type="button"
+                                        @onclick="() => ToggleUsers()">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-people-fill" style="font-size: 0.95rem; color: var(--bs-primary);"></i>
+                                        <span class="fw-semibold">Users</span>
+                                    </div>
+                                    <i class="bi bi-chevron-down transition-icon-sm"></i>
+                                </button>
+                                <div class="inner-submenu-collapse @(isUsersOpen ? "show" : "")">
+                                    <div class="inner-submenu">
+                                        <NavLink class="submenu-link d-flex align-items-center gap-2 px-4 py-2 rounded-3 ms-5" 
+                                                 href="/users"
+                                                 Match="NavLinkMatch.All">
+                                            <i class="bi bi-list-ul" style="font-size: 0.85rem;"></i>
+                                            <span>User List</span>
+                                        </NavLink>
+                                        
+                                        @if (isSupervisor)
+                                        {
+                                            <NavLink class="submenu-link d-flex align-items-center gap-2 px-4 py-2 rounded-3 ms-5" 
+                                                     href="/users/form"
+                                                     Match="NavLinkMatch.Prefix">
+                                                <i class="bi bi-plus-circle" style="font-size: 0.85rem;"></i>
+                                                <span>Add User</span>
+                                            </NavLink>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
 
-            <li class="nav-item">
-                <NavLink class="nav-link d-flex align-items-center gap-2 rounded-3 px-3 py-2" 
-                         href="/templates">
-                    <i class="bi bi-file-earmark-text-fill fs-5"></i>
-                    <span class="fw-semibold">Templates</span>
-                </NavLink>
-            </li>
+                            <!-- Templates Menu (Available for Both Roles) -->
+                            <div class="nav-dropdown mb-2">
+                                <button class="submenu-parent-link d-flex align-items-center justify-content-between w-100 border-0 bg-transparent px-4 py-2 rounded-3 ms-3 @(isTemplatesOpen ? "" : "collapsed") @(IsTemplatesActive() ? "active-submenu" : "")" 
+                                        type="button"
+                                        @onclick="() => ToggleTemplates()">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-file-earmark-text-fill" style="font-size: 0.95rem; color: var(--bs-primary);"></i>
+                                        <span class="fw-semibold">Templates</span>
+                                    </div>
+                                    <i class="bi bi-chevron-down transition-icon-sm"></i>
+                                </button>
+                                <div class="inner-submenu-collapse @(isTemplatesOpen ? "show" : "")">
+                                    <div class="inner-submenu">
+                                        <NavLink class="submenu-link d-flex align-items-center gap-2 px-4 py-2 rounded-3 ms-5" 
+                                                 href="/templates"
+                                                 Match="NavLinkMatch.All">
+                                            <i class="bi bi-list-ul" style="font-size: 0.85rem;"></i>
+                                            <span>Template List</span>
+                                        </NavLink>
+                                        <NavLink class="submenu-link d-flex align-items-center gap-2 px-4 py-2 rounded-3 ms-5" 
+                                                 href="/templates/form"
+                                                 Match="NavLinkMatch.Prefix">
+                                            <i class="bi bi-plus-circle" style="font-size: 0.85rem;"></i>
+                                            <span>Add Template</span>
+                                        </NavLink>
+                                    </div>
+                                </div>
+                            </div>
 
-            <li class="nav-item">
-                <NavLink class="nav-link d-flex align-items-center gap-2 rounded-3 px-3 py-2" 
-                         href="/surveys">
-                    <i class="bi bi-clipboard-data-fill fs-5"></i>
-                    <span class="fw-semibold">Surveys</span>
-                </NavLink>
+                            <!-- Surveys Menu -->
+                            <div class="nav-dropdown">
+                                <button class="submenu-parent-link d-flex align-items-center justify-content-between w-100 border-0 bg-transparent px-4 py-2 rounded-3 ms-3 @(isSurveysOpen ? "" : "collapsed") @(IsSurveysActive() ? "active-submenu" : "")" 
+                                        type="button"
+                                        @onclick="() => ToggleSurveys()">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-clipboard-data-fill" style="font-size: 0.95rem; color: var(--bs-primary);"></i>
+                                        <span class="fw-semibold">Surveys</span>
+                                    </div>
+                                    <i class="bi bi-chevron-down transition-icon-sm"></i>
+                                </button>
+                                <div class="inner-submenu-collapse @(isSurveysOpen ? "show" : "")">
+                                    <div class="inner-submenu">
+                                        <NavLink class="submenu-link d-flex align-items-center gap-2 px-4 py-2 rounded-3 ms-5" 
+                                                 href="/surveys"
+                                                 Match="NavLinkMatch.All">
+                                            <i class="bi bi-list-ul" style="font-size: 0.85rem;"></i>
+                                            <span>Survey List</span>
+                                        </NavLink>
+                                        
+                                        @if (isUser)
+                                        {
+                                            <NavLink class="submenu-link d-flex align-items-center gap-2 px-4 py-2 rounded-3 ms-5" 
+                                                     href="/surveys/form"
+                                                     Match="NavLinkMatch.Prefix">
+                                                <i class="bi bi-plus-circle" style="font-size: 0.85rem;"></i>
+                                                <span>Create Survey</span>
+                                            </NavLink>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </li>
         </ul>
     </nav>
 
-    <div class="p-3 border-top mt-auto">
-        <button class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 rounded-3 py-2 fw-bold transition-all" 
+    <!-- Logout Button -->
+    <div class="p-3 border-top border-custom mt-auto">
+        <button class="btn btn-outline-danger-custom w-100 d-flex align-items-center justify-content-center gap-2 rounded-3 py-3 fw-semibold" 
                 @onclick="HandleLogout">
             <i class="bi bi-box-arrow-right fs-5"></i>
             <span>Sign Out</span>
@@ -55,49 +163,276 @@
 </div>
 
 <style>
-    .nav-link {
-        color: #64748b;
+    .icon-wrapper {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background-color: rgba(79, 70, 229, 0.08);
+        color: var(--bs-primary);
         transition: all 0.2s ease;
+    }
+
+    .nav-link {
+        color: var(--text-body);
+        transition: all 0.2s ease;
+        cursor: pointer;
+        text-decoration: none;
+        border: 1px solid transparent;
     }
 
     .nav-link:hover {
-        background-color: rgba(14, 165, 233, 0.1);
-        color: #0ea5e9;
+        background-color: rgba(79, 70, 229, 0.05);
+        border-color: var(--border-color);
+    }
+
+    .nav-link:hover .icon-wrapper {
+        background-color: var(--bs-primary);
+        color: white;
+        transform: scale(1.05);
     }
 
     .nav-link.active {
-        background-color: #0ea5e9;
+        background-color: rgba(79, 70, 229, 0.1);
+        color: var(--bs-primary);
+        border-color: var(--bs-primary);
+    }
+
+    .nav-link.active .icon-wrapper {
+        background-color: var(--bs-primary);
         color: white;
     }
 
-    .nav-link.active i {
-        color: white;
-    }
-    .btn-outline-danger {
-        border-color: #fee2e2;
-        color: #ef4444;
+    .submenu-collapse, .inner-submenu-collapse {
+        overflow: hidden;
+        transition: max-height 0.35s ease;
+        max-height: 0;
     }
 
-    .btn-outline-danger:hover {
-        background-color: #ef4444;
-        color: white;
-        border-color: #ef4444;
-        box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
+    .submenu-collapse.show {
+        max-height: 600px;
     }
-    
-    .transition-all {
+
+    .inner-submenu-collapse.show {
+        max-height: 200px;
+    }
+
+    .submenu {
+        padding: 0.5rem 0;
+    }
+
+    .inner-submenu {
+        padding: 0.25rem 0;
+    }
+
+    .submenu-parent-link {
+        color: var(--text-body);
         transition: all 0.2s ease;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+
+    .submenu-parent-link:hover {
+        background-color: rgba(79, 70, 229, 0.05);
+        color: var(--bs-primary);
+    }
+
+    .submenu-parent-link.active-submenu {
+        background-color: rgba(79, 70, 229, 0.08);
+        color: var(--bs-primary);
+        border-left: 3px solid var(--bs-primary);
+        padding-left: calc(1rem - 3px);
+    }
+
+    .submenu-link {
+        color: var(--text-muted);
+        transition: all 0.2s ease;
+        text-decoration: none;
+        font-size: 0.85rem;
+        margin: 0.25rem 0;
+        display: flex;
+    }
+
+    .submenu-link:hover {
+        color: var(--bs-primary);
+        background-color: rgba(79, 70, 229, 0.05);
+        transform: translateX(4px);
+    }
+
+    .submenu-link.active {
+        color: var(--bs-primary);
+        background-color: rgba(79, 70, 229, 0.1);
+        font-weight: 600;
+    }
+
+    .submenu-link i {
+        color: var(--bs-primary);
+    }
+
+    .transition-icon, .transition-icon-sm {
+        transition: transform 0.3s ease;
+        color: var(--text-muted);
+    }
+
+    .transition-icon-sm {
+        font-size: 0.85rem;
+    }
+
+    button:not(.collapsed) .transition-icon,
+    button:not(.collapsed) .transition-icon-sm {
+        transform: rotate(180deg);
+    }
+
+    .btn-outline-danger-custom {
+        border: 1px solid var(--border-color);
+        color: var(--accent-danger);
+        background-color: transparent;
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-danger-custom:hover {
+        background-color: var(--accent-danger);
+        color: white;
+        border-color: var(--accent-danger);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+        transform: translateY(-2px);
+    }
+
+    nav::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    nav::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    nav::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 10px;
+    }
+
+    nav::-webkit-scrollbar-thumb:hover {
+        background: var(--bs-secondary);
     }
 </style>
 
 @code {
-    @inject NavigationManager NavigationManager
-    @inject IJSRuntime JS
-    @inject TaskSurvey.StateServices.AuthState AuthState
+    private bool isMasterOpen = false;
+    private bool isUsersOpen = false;
+    private bool isTemplatesOpen = false;
+    private bool isSurveysOpen = false;
+    private bool isSupervisor = false;
+    private bool isUser = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadAuthStateFromSession();
+            
+            isSupervisor = AuthState.CurrentUser?.RoleId == 1;
+            isUser = AuthState.CurrentUser?.RoleId == 2;
+            
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        var currentPath = NavigationManager.Uri.ToLower();
+        
+        if (currentPath.Contains("/users") || currentPath.Contains("/templates") || currentPath.Contains("/surveys"))
+        {
+            isMasterOpen = true;
+            
+            if (currentPath.Contains("/users"))
+            {
+                isUsersOpen = true;
+            }
+            else if (currentPath.Contains("/templates"))
+            {
+                isTemplatesOpen = true;
+            }
+            else if (currentPath.Contains("/surveys"))
+            {
+                isSurveysOpen = true;
+            }
+        }
+    }
+
+    private async Task LoadAuthStateFromSession()
+    {
+        try
+        {
+            var userJson = await JS.InvokeAsync<string>("sessionStorage.getItem", "UserSession");
+            
+            if (!string.IsNullOrEmpty(userJson))
+            {
+                var user = JsonSerializer.Deserialize<User>(userJson);
+                if (user != null)
+                {
+                    AuthState.SetAuthenticationState(user);
+                    return;
+                }
+            }
+            
+            NavigationManager.NavigateTo("/login", true);
+        }
+        catch (Exception)
+        {
+            NavigationManager.NavigateTo("/login", true);
+        }
+    }
+
+    private void ToggleMaster()
+    {
+        isMasterOpen = !isMasterOpen;
+    }
+
+    private void ToggleUsers()
+    {
+        isUsersOpen = !isUsersOpen;
+    }
+
+    private void ToggleTemplates()
+    {
+        isTemplatesOpen = !isTemplatesOpen;
+    }
+
+    private void ToggleSurveys()
+    {
+        isSurveysOpen = !isSurveysOpen;
+    }
+
+    private bool IsAnyMasterItemActive()
+    {
+        var currentPath = NavigationManager.Uri.ToLower();
+        return currentPath.Contains("/users") || 
+               currentPath.Contains("/templates") || 
+               currentPath.Contains("/surveys");
+    }
+
+    private bool IsUsersActive()
+    {
+        return NavigationManager.Uri.ToLower().Contains("/users");
+    }
+
+    private bool IsTemplatesActive()
+    {
+        return NavigationManager.Uri.ToLower().Contains("/templates");
+    }
+
+    private bool IsSurveysActive()
+    {
+        return NavigationManager.Uri.ToLower().Contains("/surveys");
+    }
 
     private async Task HandleLogout()
     {
-        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Apakah Anda yakin ingin keluar?");
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to sign out?");
         
         if (confirmed)
         {

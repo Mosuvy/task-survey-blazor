@@ -5,6 +5,7 @@
 @inject ITemplateService TemplateService
 @inject IPositionService PositionService
 @inject IJSRuntime JSRuntime
+@inject AuthState AuthState
 @inject NavigationManager NavigationManager
 
 <PageTitle>Template Management</PageTitle>
@@ -37,18 +38,6 @@
                     <input type="text" class="form-control" placeholder="Search by name or ID..." 
                            @bind="searchQuery" @bind:event="oninput" @onkeyup="ApplyFilters" 
                            style="font-size: 0.95rem;" />
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.85rem;">
-                        <i class="bi bi-diagram-3 me-1" style="color: #0ea5e9;"></i>Position Level
-                    </label>
-                    <select class="form-select" @onchange="OnPositionFilterChanged" style="font-size: 0.95rem;">
-                        <option value="0">All Positions</option>
-                        @foreach (var p in positions)
-                        {
-                            <option value="@p.Id">@p.PositionLevel</option>
-                        }
-                    </select>
                 </div>
             </div>
         </div>
@@ -175,23 +164,58 @@
     private List<PositionResponseDTO> positions = new();
     
     private string searchQuery = "";
-    private int selectedPosId = 0;
+    private int userPositionId = 0;
+    private bool isDataLoaded = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadAuthStateFromSession();
+            
+            userPositionId = AuthState.CurrentUser?.PositionId ?? 0;
+            
+            await LoadData();
+            
+            isDataLoaded = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadAuthStateFromSession()
+    {
+        try
+        {
+            var userJson = await JSRuntime.InvokeAsync<string>("sessionStorage.getItem", "UserSession");
+            
+            if (!string.IsNullOrEmpty(userJson))
+            {
+                var user = JsonSerializer.Deserialize<User>(userJson);
+                if (user != null)
+                {
+                    AuthState.SetAuthenticationState(user);
+                    return;
+                }
+            }
+            
+            NavigationManager.NavigateTo("/login", true);
+        }
+        catch (Exception)
+        {
+            NavigationManager.NavigateTo("/login", true);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         positions = await PositionService.GetPositions();
-        await LoadData();
     }
 
     private async Task LoadData()
     {
-        templates = await TemplateService.GetTemplateHeaders();
-        ApplyFilters();
-    }
-
-    private void OnPositionFilterChanged(ChangeEventArgs e)
-    {
-        selectedPosId = int.Parse(e.Value?.ToString() ?? "0");
+        Console.WriteLine("DEBUG: Position ID is " + userPositionId);
+        
+        templates = await TemplateService.GetTemplateByPositionId(userPositionId) ?? new();
         ApplyFilters();
     }
 
@@ -204,8 +228,6 @@
             var q = searchQuery.ToLower();
             result = result.Where(t => t.TemplateName.ToLower().Contains(q) || t.Id.Contains(q));
         }
-
-        if (selectedPosId != 0) result = result.Where(t => t.PositionId == selectedPosId);
 
         filteredTemplates = result.ToList();
     }

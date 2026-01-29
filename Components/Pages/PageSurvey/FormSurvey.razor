@@ -4,15 +4,18 @@
 @rendermode InteractiveServer
 @inject ISurveyService SurveyService
 @inject ITemplateService TemplateService
+@inject IUserService UserService
 @inject NavigationManager NavigationManager
 @inject TaskSurvey.StateServices.AuthState AuthState
 @inject TaskSurvey.Infrastructure.Data.AppDbContext DbContext
-@inject TaskSurvey.Infrastructure.Utils.IdGeneratorUtil IdGenerator
 @inject IJSRuntime JS
 @using TaskSurvey.Infrastructure.DTOs.SurveyDTOs
 @using TaskSurvey.Infrastructure.DTOs.TemplateDTOs
+@using TaskSurvey.Infrastructure.DTOs.UserDTOs
 @using TaskSurvey.Infrastructure.Models
 @using TaskSurvey.Infrastructure.Utils
+
+<PageTitle>Survey Form</PageTitle>
 
 <div class="container mt-4 mb-5">
     <div class="row justify-content-center">
@@ -24,19 +27,51 @@
                         <i class="bi bi-clipboard-check fs-5"></i>
                     </div>
                     <div>
-                        <h4 class="mb-0 fw-bold text-dark">@(isEditMode ? "Edit Survey" : "Create New Survey")</h4>
-                        <p class="text-muted mb-0" style="font-size: 0.85rem;">@(isEditMode ? $"Modify survey document: {reqDto.DocumentId}" : "Fill out survey form")</p>
+                        <h4 class="mb-0 fw-bold text-dark">
+                            @GetPageTitle()
+                        </h4>
+                        <p class="text-muted mb-0" style="font-size: 0.85rem;">
+                            @GetPageSubtitle()
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <!-- Template Update Warning -->
-            @if (showTemplateUpdateWarning)
+            <!-- View Only Notice -->
+            @if (isViewOnly && !isSupervisor)
             {
-                <div class="alert alert-warning border-0 shadow-sm mb-3 d-flex align-items-center" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <div class="alert alert-info border-0 shadow-sm mb-3 d-flex align-items-center" role="alert">
+                    <i class="bi bi-info-circle-fill me-2 fs-5"></i>
                     <div>
-                        <strong>Template Updated!</strong> The template has been updated since this survey was created. Please review the changes.
+                        <strong>View Only Mode:</strong> This survey is already submitted for approval. You can only view the content.
+                    </div>
+                </div>
+            }
+
+            <!-- Template Update Warning (Only for User and Draft Status) -->
+            @if (showTemplateUpdateWarning && !isSupervisor && reqDto.Status == StatusType.Draft && !isViewOnly)
+            {
+                <div class="alert alert-warning border-0 shadow-sm mb-3 d-flex align-items-center justify-content-between" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                        <div>
+                            <strong>Template Updated!</strong> The template has been updated since this survey was created. 
+                            <span class="text-muted">Click the button to update to the latest version.</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-dark px-3" @onclick="() => showUpdateTemplateModal = true">
+                        <i class="bi bi-arrow-repeat me-1"></i>Update Template
+                    </button>
+                </div>
+            }
+
+            <!-- Supervisor View Only Notice -->
+            @if (isSupervisor)
+            {
+                <div class="alert alert-info border-0 shadow-sm mb-3 d-flex align-items-center" role="alert">
+                    <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                    <div>
+                        <strong>Supervisor Mode:</strong> You are viewing this survey in read-only mode. You can only approve or reject this submission.
                     </div>
                 </div>
             }
@@ -63,8 +98,8 @@
                     <div class="card border-0 shadow-sm rounded-3 h-100">
                         <div class="card-body p-3">
                             <p class="text-muted mb-1" style="font-size: 0.75rem;">STATUS</p>
-                            <span class="badge rounded-pill @GetStatusBadgeClass(reqDto.Status.ToString())">
-                                @GetStatusDisplay(reqDto.Status.ToString())
+                            <span class="badge rounded-pill @GetStatusBadgeClass(GetCurrentStatus())">
+                                @GetStatusDisplay(GetCurrentStatus())
                             </span>
                         </div>
                     </div>
@@ -73,7 +108,7 @@
                     <div class="card border-0 shadow-sm rounded-3 h-100">
                         <div class="card-body p-3">
                             <p class="text-muted mb-1" style="font-size: 0.75rem;">CREATED BY</p>
-                            <h6 class="fw-bold mb-0">@(AuthState.CurrentUser != null ? AuthState.CurrentUser.Username : "N/A")</h6>
+                            <h6 class="fw-bold mb-0">@(requesterData != null ? requesterData.Username : "N/A")</h6>
                         </div>
                     </div>
                 </div>
@@ -90,15 +125,29 @@
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Employee ID</label>
-                            <input type="text" class="form-control bg-light" value="@(AuthState.CurrentUser != null ? AuthState.CurrentUser.Id : "")" readonly style="font-size: 0.95rem;" />
+                            <input type="text" class="form-control bg-light" value="@(requesterData != null ? requesterData.Id : "")" readonly style="font-size: 0.95rem;" />
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Employee Name</label>
-                            <input type="text" class="form-control bg-light" value="@(AuthState.CurrentUser != null ? AuthState.CurrentUser.Username : "")" readonly style="font-size: 0.95rem;" />
+                            <input type="text" class="form-control bg-light" value="@(requesterData != null ? requesterData.Username : "")" readonly style="font-size: 0.95rem;" />
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Position</label>
-                            <input type="text" class="form-control bg-light" value="@(AuthState.CurrentUser != null ? AuthState.CurrentUser.PositionName : "")" readonly style="font-size: 0.95rem;" />
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Position Name</label>
+                            <input type="text" class="form-control bg-light" value="@(requesterData != null ? requesterData.PositionName : "")" readonly style="font-size: 0.95rem;" />
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Supervisor ID</label>
+                            <input type="text" class="form-control bg-light" value="@(requesterData?.Supervisor != null ? requesterData.Supervisor.Id : "-")" readonly style="font-size: 0.95rem;" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Supervisor Name</label>
+                            <input type="text" class="form-control bg-light" value="@(requesterData?.Supervisor != null ? requesterData.Supervisor.Username : "-")" readonly style="font-size: 0.95rem;" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Position Name</label>
+                            <input type="text" class="form-control bg-light" value="@(requesterData?.Supervisor != null ? requesterData.Supervisor.PositionName : "-")" readonly style="font-size: 0.95rem;" />
                         </div>
                     </div>
                 </div>
@@ -115,21 +164,32 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Template ID</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0">
-                                    <i class="bi bi-fingerprint" style="color: #0ea5e9;"></i>
-                                </span>
-                                <input type="text" class="form-control bg-light border-start-0" 
-                                       value="@reqDto.TemplateHeaderId" readonly style="font-size: 0.95rem;" />
-                                <button class="btn text-white px-3" type="button" @onclick="() => showTemplateModal = true"
-                                        style="background: #0ea5e9; border: none;">
-                                    <i class="bi bi-search me-1"></i>Select
-                                </button>
-                            </div>
+                            @if (isViewOnly || isSupervisor)
+                            {
+                                <input type="text" class="form-control bg-light" value="@reqDto.TemplateHeaderId" readonly style="font-size: 0.95rem;" />
+                            }
+                            else
+                            {
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="bi bi-fingerprint" style="color: #0ea5e9;"></i>
+                                    </span>
+                                    <input type="text" class="form-control bg-light border-start-0" 
+                                           value="@reqDto.TemplateHeaderId" readonly style="font-size: 0.95rem;" />
+                                    <button class="btn text-white px-3" type="button" @onclick="() => showTemplateModal = true"
+                                            style="background: #0ea5e9; border: none;" disabled="@isViewOnly">
+                                        <i class="bi bi-search me-1"></i>Select
+                                    </button>
+                                </div>
+                            }
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Template Name</label>
                             <input type="text" class="form-control bg-light" value="@selectedTemplateName" readonly style="font-size: 0.95rem;" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.9rem;">Template Theme</label>
+                            <input type="text" class="form-control bg-light" value="@selectedTemplateTheme" readonly style="font-size: 0.95rem;" />
                         </div>
                     </div>
                 </div>
@@ -154,29 +214,63 @@
                     {
                         @foreach (var item in reqDto.SurveyItems.OrderBy(x => x.OrderNo))
                         {
-                            <div class="card border-0 shadow-sm mb-3 p-3 rounded-3" style="background: #f8f9fa;">
-                                <p class="fw-bold mb-3" style="font-size: 1rem;">
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark mb-3" style="font-size: 1rem;">
                                     @item.OrderNo. @item.Question
-                                </p>
+                                </label>
                                 
                                 @if (item.Type == QuestionType.TextBox)
                                 {
-                                    <textarea class="form-control" rows="3" @bind="item.Answer" 
-                                              placeholder="Type your answer here..." style="font-size: 0.95rem;"></textarea>
+                                    <input type="text" class="form-control @(isViewOnly ? "bg-light" : "")" 
+                                           value="@item.Answer" 
+                                           placeholder="Type your answer here..." 
+                                           readonly="@isViewOnly"
+                                           disabled="@(isViewOnly || isSupervisor)"
+                                           style="font-size: 0.95rem;" 
+                                           @onchange="@((ChangeEventArgs e) => {
+                                               if (!isViewOnly && !isSupervisor) item.Answer = e.Value?.ToString()!;
+                                           })" />
+                                }
+                                else if (item.Type == QuestionType.TextArea)
+                                {
+                                    <textarea class="form-control @(isViewOnly ? "bg-light" : "")" 
+                                              rows="4" 
+                                              placeholder="Type your answer here..." 
+                                              readonly="@isViewOnly"
+                                              disabled="@(isViewOnly || isSupervisor)"
+                                              style="font-size: 0.95rem;"
+                                              @onchange="@((ChangeEventArgs e) => {
+                                                  if (!isViewOnly && !isSupervisor) item.Answer = e.Value?.ToString()!;
+                                              })">@item.Answer</textarea>
+                                }
+                                else if (item.Type == QuestionType.Number)
+                                {
+                                    <input type="number" class="form-control @(isViewOnly ? "bg-light" : "")" 
+                                           value="@item.Answer" 
+                                           placeholder="Enter number..." 
+                                           readonly="@isViewOnly"
+                                           disabled="@(isViewOnly || isSupervisor)"
+                                           style="font-size: 0.95rem;" 
+                                           @onchange="@((ChangeEventArgs e) => {
+                                               if (!isViewOnly && !isSupervisor) item.Answer = e.Value?.ToString()!;
+                                           })" />
                                 }
                                 else if (item.Type == QuestionType.CheckBox)
                                 {
-                                    <div class="row g-2">
+                                    <div class="card border-0 p-3 rounded-3" style="background: #f8f9fa;">
                                         @foreach (var detail in item.CheckBox)
                                         {
-                                            <div class="col-md-6">
-                                                <div class="form-check p-3 border rounded-3 bg-white">
-                                                    <input class="form-check-input" type="checkbox" 
-                                                           @bind="detail.IsChecked" id="det-@detail.Id">
-                                                    <label class="form-check-label fw-semibold ms-2" for="det-@detail.Id">
-                                                        @detail.Item
-                                                    </label>
-                                                </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       checked="@detail.IsChecked"
+                                                       disabled="@(isViewOnly || isSupervisor)"
+                                                       id="det-@detail.Id"
+                                                       @onchange="@((ChangeEventArgs e) => {
+                                                           if (!isViewOnly && !isSupervisor) detail.IsChecked = (bool)(e.Value ?? false);
+                                                       })" />
+                                                <label class="form-check-label ms-2" for="det-@detail.Id" style="font-size: 0.95rem;">
+                                                    @detail.Item
+                                                </label>
                                             </div>
                                         }
                                     </div>
@@ -189,31 +283,51 @@
 
             <!-- Action Buttons -->
             <div class="d-flex gap-2 flex-wrap mb-5">
-                <button class="btn text-white px-4 shadow-sm" @onclick="HandleSubmit"
-                        style="background: #10b981; border: none;">
-                    <i class="bi bi-check-circle me-2"></i>Submit
-                </button>
-                <button class="btn text-white px-4 shadow-sm" @onclick="HandleSaveDraft"
-                        style="background: #f59e0b; border: none;">
-                    <i class="bi bi-save me-2"></i>Save Draft
-                </button>
-                @if (isEditMode)
+                @if (isSupervisor)
                 {
-                    <button class="btn text-white px-3 shadow-sm" @onclick="HandleDelete"
-                            style="background: #ef4444; border: none;">
-                        <i class="bi bi-trash me-2"></i>Delete
-                    </button>
+                    <!-- Supervisor Actions: Only Approve/Reject when status is ConfirmToApprove -->
+                    @if (reqDto.Status == StatusType.ConfirmToApprove)
+                    {
+                        <button class="btn text-white px-4 shadow-sm" @onclick="HandleApprove"
+                                style="background: #10b981; border: none;">
+                            <i class="bi bi-check-circle me-2"></i>Approve
+                        </button>
+                        <button class="btn text-white px-4 shadow-sm" @onclick="HandleReject"
+                                style="background: #ef4444; border: none;">
+                            <i class="bi bi-x-circle me-2"></i>Reject
+                        </button>
+                    }
                 }
+                else if (!isViewOnly)
+                {
+                    <!-- User Actions: Only show when not in view-only mode -->
+                    <button class="btn text-white px-4 shadow-sm" @onclick="HandleSubmit"
+                            style="background: #10b981; border: none;">
+                        <i class="bi bi-check-circle me-2"></i>Submit
+                    </button>
+                    <button class="btn text-white px-4 shadow-sm" @onclick="HandleSaveDraft"
+                            style="background: #f59e0b; border: none;">
+                        <i class="bi bi-save me-2"></i>Save Draft
+                    </button>
+                    @if (isEditMode && reqDto.Status == StatusType.Draft)
+                    {
+                        <button class="btn text-white px-3 shadow-sm" @onclick="HandleDelete"
+                                style="background: #ef4444; border: none;">
+                            <i class="bi bi-trash me-2"></i>Delete
+                        </button>
+                    }
+                }
+                
                 <button class="btn btn-outline-secondary px-3 ms-auto" @onclick='() => NavigationManager.NavigateTo("/surveys")'>
-                    <i class="bi bi-x-circle me-2"></i>Cancel
+                    <i class="bi bi-x-circle me-2"></i>@(isViewOnly || isSupervisor ? "Back" : "Cancel")
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Template Selection Modal -->
-@if (showTemplateModal)
+<!-- Template Selection Modal (User Only) -->
+@if (showTemplateModal && !isSupervisor && !isViewOnly)
 {
     <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6);">
         <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -257,20 +371,109 @@
     </div>
 }
 
+<!-- Update Template Confirmation Modal (User Only, Draft Status) -->
+@if (showUpdateTemplateModal && !isSupervisor && !isViewOnly && reqDto.Status == StatusType.Draft)
+{
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.7);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-3">
+                <div class="modal-header text-white py-3 px-4" style="background: #f59e0b;">
+                    <h6 class="modal-title fw-semibold mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Update Template Confirmation
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => showUpdateTemplateModal = false"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-warning border-0 mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Important:</strong> Updating to the latest template will replace all current survey items with the new template structure.
+                    </div>
+                    <p class="mb-2"><strong>Current Status:</strong></p>
+                    <ul class="mb-3">
+                        <li>Your current answers will be <strong>preserved where possible</strong></li>
+                        <li>New questions will be added as empty</li>
+                        <li>Removed questions will be deleted</li>
+                    </ul>
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">
+                        Do you want to update this survey to use the latest template version?
+                    </p>
+                </div>
+                <div class="modal-footer bg-light py-3 px-4">
+                    <button class="btn btn-outline-secondary px-4" @onclick="() => showUpdateTemplateModal = false">
+                        <i class="bi bi-x-circle me-2"></i>No, Keep Current
+                    </button>
+                    <button class="btn text-white px-4" @onclick="HandleUpdateToLatestTemplate"
+                            style="background: #f59e0b; border: none;">
+                        <i class="bi bi-arrow-repeat me-2"></i>Yes, Update Template
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
-    private SurveyHeaderRequestDTO reqDto = new() { SurveyItems = new(), Status = StatusType.Draft };
+    private SurveyHeaderRequestDTO reqDto = new() { SurveyItems = new() };
     private List<TemplateHeaderResponseDTO> allTemplates = new();
+    private UserResponseDTO? requesterData;
     
     private string? currentSurveyId;
     private string selectedTemplateName = "";
+    private string selectedTemplateTheme = "";
     private string searchQuery = "";
     private bool isEditMode = false;
     private bool showTemplateModal = false;
+    private bool showUpdateTemplateModal = false;
     private bool showTemplateUpdateWarning = false;
+    private bool hasBeenSaved = false;
+    private bool isSupervisor = false;
+    private bool isViewOnly = false;
+    private int userPositionId = 0;
+    private bool isDataLoaded = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        allTemplates = await TemplateService.GetTemplateHeaders();
+        if (firstRender)
+        {
+            await LoadAuthStateFromSession();
+            
+            isSupervisor = AuthState.CurrentUser?.RoleId == 1;
+            userPositionId = AuthState.CurrentUser?.PositionId ?? 0;
+
+            await InitializeFormData();
+            
+            isDataLoaded = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadAuthStateFromSession()
+    {
+        try
+        {
+            var userJson = await JS.InvokeAsync<string>("sessionStorage.getItem", "UserSession");
+            
+            if (!string.IsNullOrEmpty(userJson))
+            {
+                var user = JsonSerializer.Deserialize<User>(userJson);
+                if (user != null)
+                {
+                    AuthState.SetAuthenticationState(user);
+                    return;
+                }
+            }
+            
+            NavigationManager.NavigateTo("/login", true);
+        }
+        catch (Exception)
+        {
+            NavigationManager.NavigateTo("/login", true);
+        }
+    }
+
+    private async Task InitializeFormData()
+    {
+        allTemplates = await TemplateService.GetTemplateByPositionId(userPositionId) ?? new();
         
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
         if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("surveyId", out var id))
@@ -280,7 +483,77 @@
         else
         {
             await GenerateDocumentId();
-            reqDto.RequesterId = AuthState.CurrentUser?.Id!;
+            if (AuthState.CurrentUser != null)
+            {
+                reqDto.RequesterId = AuthState.CurrentUser.Id;
+                await LoadRequesterData();
+            }
+        }
+
+        DetermineViewOnlyMode();
+    }
+
+    private void DetermineViewOnlyMode()
+    {
+        if (isSupervisor)
+        {
+            isViewOnly = true;
+        }
+        else if (isEditMode)
+        {
+            isViewOnly = reqDto.Status != StatusType.Draft;
+        }
+        else
+        {
+            isViewOnly = false;
+        }
+    }
+
+    private string GetPageTitle()
+    {
+        if (isSupervisor)
+        {
+            return "Review Survey";
+        }
+        else if (isViewOnly)
+        {
+            return "View Survey";
+        }
+        else if (isEditMode)
+        {
+            return "Edit Survey";
+        }
+        else
+        {
+            return "Create New Survey";
+        }
+    }
+
+    private string GetPageSubtitle()
+    {
+        if (isSupervisor)
+        {
+            return $"Review and approve survey: {reqDto.DocumentId}";
+        }
+        else if (isViewOnly)
+        {
+            return $"View survey document: {reqDto.DocumentId}";
+        }
+        else if (isEditMode)
+        {
+            return $"Modify survey document: {reqDto.DocumentId}";
+        }
+        else
+        {
+            return "Fill out survey form";
+        }
+    }
+
+    private async Task LoadRequesterData()
+    {
+        if (!string.IsNullOrEmpty(reqDto.RequesterId))
+        {
+            requesterData = await UserService.GetUserById(reqDto.RequesterId);
         }
     }
 
@@ -292,6 +565,7 @@
     private async Task LoadExistingSurvey(string id)
     {
         isEditMode = true;
+        hasBeenSaved = true;
         currentSurveyId = id;
         var data = await SurveyService.GetSurveyHeaderById(id);
         if (data != null)
@@ -324,9 +598,17 @@
             };
             
             selectedTemplateName = data.Header != null ? data.Header.TemplateName : "N/A";
+            selectedTemplateTheme = data.Header != null ? data.Header.Theme : "N/A";
             
-            // Check if template was updated
-            if (data.Header != null && data.UpdatedAtTemplate != data.Header.UpdatedAt)
+            // Load requester data with supervisor
+            await LoadRequesterData();
+            
+            // Check if template was updated - Only show for User and Draft status and not view-only
+            if (data.Header != null && 
+                data.UpdatedAtTemplate != data.Header.UpdatedAt && 
+                !isSupervisor && 
+                reqDto.Status == StatusType.Draft &&
+                !isViewOnly)
             {
                 showTemplateUpdateWarning = true;
             }
@@ -341,6 +623,7 @@
             reqDto.TemplateHeaderId = fullTemplate.Id;
             reqDto.UpdatedAtTemplate = fullTemplate.UpdatedAt;
             selectedTemplateName = fullTemplate.TemplateName;
+            selectedTemplateTheme = fullTemplate.Theme;
             
             reqDto.SurveyItems = fullTemplate.Items.Select(i => new SurveyItemRequestDTO
             {
@@ -363,14 +646,108 @@
         StateHasChanged();
     }
 
+    private async Task HandleUpdateToLatestTemplate()
+    {
+        try
+        {
+            showUpdateTemplateModal = false;
+
+            var latestTemplate = await TemplateService.GetTemplateByHeaderId(reqDto.TemplateHeaderId!);
+            
+            if (latestTemplate == null) return;
+
+            var updatePayload = new SurveyHeaderRequestDTO 
+            {
+                TemplateHeaderId = latestTemplate.Id,
+                UpdatedAtTemplate = latestTemplate.UpdatedAt,
+                Status = reqDto.Status,
+                SurveyItems = latestTemplate.Items.Select(i => new SurveyItemRequestDTO 
+                {
+                    TemplateItemId = i.Id,
+                    Question = i.Question,
+                    Type = Enum.Parse<QuestionType>(i.Type),
+                    OrderNo = i.OrderNo,
+                    CheckBox = i.ItemDetails.Select(d => new SurveyItemDetailRequestDTO 
+                    {
+                        TemplateItemDetailId = d.Id,
+                        Item = d.Item
+                    }).ToList()
+                }).ToList()
+            };
+
+            var result = await SurveyService.UpdateSurveyHeaderFromLatestTemplate(currentSurveyId!, updatePayload);
+            
+            if (result != null)
+            {
+                reqDto = new SurveyHeaderRequestDTO { SurveyItems = new() }; 
+                await LoadExistingSurvey(currentSurveyId!);
+                
+                showTemplateUpdateWarning = false;
+                StateHasChanged();
+                await JS.InvokeVoidAsync("alert", "Template updated and answers preserved!");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", "Error: " + ex.Message);
+        }
+    }
+
+    private async Task HandleApprove()
+    {
+        try
+        {
+            var result = await SurveyService.UpdateSurveyHeaderStatus(currentSurveyId!, "Confirmed");
+            if (result != null)
+            {
+                await JS.InvokeVoidAsync("alert", "Survey has been approved!");
+                NavigationManager.NavigateTo("/surveys");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", "Error: " + ex.Message);
+        }
+    }
+
+    private async Task HandleReject()
+    {
+        try
+        {
+            var result = await SurveyService.UpdateSurveyHeaderStatus(currentSurveyId!, "Rejected");
+            if (result != null)
+            {
+                await JS.InvokeVoidAsync("alert", "Survey has been rejected!");
+                NavigationManager.NavigateTo("/surveys");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", "Error: " + ex.Message);
+        }
+    }
+
+    private string GetCurrentStatus()
+    {
+        if (!hasBeenSaved && !isEditMode)
+        {
+            return "New";
+        }
+        return reqDto.Status.ToString();
+    }
+
     private async Task HandleSaveDraft()
     {
+        if (isViewOnly) return;
+        
         reqDto.Status = StatusType.Draft;
         await ProcessSave();
     }
 
     private async Task HandleSubmit()
     {
+        if (isViewOnly) return;
+        
         reqDto.Status = StatusType.ConfirmToApprove;
         await ProcessSave();
     }
@@ -391,10 +768,14 @@
             }
             else
             {
-                reqDto.RequesterId = AuthState.CurrentUser?.Id!;
+                if (AuthState.CurrentUser != null)
+                {
+                    reqDto.RequesterId = AuthState.CurrentUser.Id;
+                }
                 await SurveyService.CreateSurveyHeader(reqDto);
             }
             
+            hasBeenSaved = true;
             NavigationManager.NavigateTo("/surveys");
         }
         catch (Exception ex)
@@ -406,6 +787,8 @@
 
     private async Task HandleDelete()
     {
+        if (isViewOnly) return;
+        
         if (await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete survey {reqDto.DocumentId}?"))
         {
             await SurveyService.DeleteSurveyHeader(currentSurveyId!);
@@ -415,9 +798,10 @@
 
     private string GetStatusBadgeClass(string status) => status switch
     {
+        "New" => "bg-secondary",
         "Draft" => "bg-warning",
         "ConfirmToApprove" => "bg-info",
-        "Approved" => "bg-success",
+        "Confirmed" => "bg-success",
         "Rejected" => "bg-danger",
         _ => "bg-secondary"
     };

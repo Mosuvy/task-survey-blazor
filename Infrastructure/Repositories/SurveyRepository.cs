@@ -12,16 +12,17 @@ namespace TaskSurvey.Infrastructure.Repositories
 {
     public class SurveyRepository : ISurveyRepository
     {
-        private readonly AppDbContext _context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-        public SurveyRepository(AppDbContext context)
+        public SurveyRepository(IDbContextFactory<AppDbContext> context)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _contextFactory = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public async Task<List<DocumentSurvey>> GetAllDocumentSurveyAsync()
         {
-            return await _context.DocumentSurveys
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.DocumentSurveys
                 .Include(ds => ds.Requester)
                 .Include(ds => ds.Header)
                 .Include(ds => ds.SurveyItems)!
@@ -32,7 +33,8 @@ namespace TaskSurvey.Infrastructure.Repositories
 
         public async Task<DocumentSurvey?> GetDocumentSurveyByIdAsync(string id)
         {
-            return await _context.DocumentSurveys
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.DocumentSurveys
                 .Include(ds => ds.Requester)
                 .Include(ds => ds.Header)
                 .Include(ds => ds.SurveyItems!.OrderBy(i => i.OrderNo))
@@ -42,7 +44,8 @@ namespace TaskSurvey.Infrastructure.Repositories
 
         public async Task<List<DocumentSurvey>?> GetDocumentSurveyByUserIdAsync(string id)
         {
-            return await _context.DocumentSurveys
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.DocumentSurveys
                 .Where(ds => ds.RequesterId == id)
                 .Include(ds => ds.Header)
                 .OrderByDescending(ds => ds.CreatedAt)
@@ -51,10 +54,23 @@ namespace TaskSurvey.Infrastructure.Repositories
 
         public async Task<List<DocumentSurvey>?> GetDocumentSurveyByStatusAsync(string status)
         {
+            using var context = await _contextFactory.CreateDbContextAsync();
             if (!Enum.TryParse<StatusType>(status, true, out var statusEnum)) return null;
 
-            return await _context.DocumentSurveys
+            return await context.DocumentSurveys
                 .Where(ds => ds.Status == statusEnum)
+                .Include(ds => ds.Requester)
+                .Include(ds => ds.Header)
+                .ToListAsync();
+        }
+
+        public async Task<List<DocumentSurvey>?> GetDocumentSurveyForSupervisorAsync(string id, string status)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            if (!Enum.TryParse<StatusType>(status, true, out var statusEnum)) return null;
+
+            return await context.DocumentSurveys
+                .Where(ds => ds.RequesterId == id && (ds.Status == statusEnum || ds.Status == StatusType.Confirmed || ds.Status == StatusType.Rejected))
                 .Include(ds => ds.Requester)
                 .Include(ds => ds.Header)
                 .ToListAsync();
@@ -62,114 +78,223 @@ namespace TaskSurvey.Infrastructure.Repositories
 
         public async Task<DocumentSurvey> CreateDocumentSurveyAsync(DocumentSurvey documentSurvey)
         {
-            documentSurvey.Id = await IdGeneratorUtil.GenerateSurveyId(_context);
-            
-            documentSurvey.CreatedAt = DateTime.Now;
-            documentSurvey.UpdatedAt = DateTime.Now;
-
-            if (documentSurvey.SurveyItems != null)
+            using var context = await _contextFactory.CreateDbContextAsync();
+            using var transaction = await context.Database.BeginTransactionAsync();
+            try
             {
-                foreach (var item in documentSurvey.SurveyItems)
-                {
-                    item.DocumentSurveyId = documentSurvey.Id; 
-                    item.CreatedAt = DateTime.Now;
-                    item.UpdatedAt = DateTime.Now;
+                documentSurvey.Id = await IdGeneratorUtil.GenerateSurveyId(context);
+                
+                documentSurvey.CreatedAt = DateTime.Now;
+                documentSurvey.UpdatedAt = DateTime.Now;
 
-                    if (item.CheckBox != null)
+                if (documentSurvey.SurveyItems != null)
+                {
+                    foreach (var item in documentSurvey.SurveyItems)
                     {
-                        foreach (var detail in item.CheckBox)
+                        item.DocumentSurveyId = documentSurvey.Id; 
+                        item.CreatedAt = DateTime.Now;
+                        item.UpdatedAt = DateTime.Now;
+
+                        if (item.CheckBox != null)
                         {
-                            detail.CreatedAt = DateTime.Now;
-                            detail.UpdatedAt = DateTime.Now;
+                            foreach (var detail in item.CheckBox)
+                            {
+                                detail.CreatedAt = DateTime.Now;
+                                detail.UpdatedAt = DateTime.Now;
+                            }
                         }
                     }
                 }
-            }
 
-            await _context.DocumentSurveys.AddAsync(documentSurvey);
-            await _context.SaveChangesAsync();
-            return documentSurvey;
+                await context.DocumentSurveys.AddAsync(documentSurvey);
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                
+                return documentSurvey;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<DocumentSurvey?> UpdateDocumentSurveyAsync(string id, DocumentSurvey documentSurvey)
         {
-            var dbSurvey = await _context.DocumentSurveys
-                .Include(ds => ds.SurveyItems!)
-                    .ThenInclude(si => si.CheckBox)
-                .FirstOrDefaultAsync(ds => ds.Id == id);
-
-            if (dbSurvey == null) return null;
-
-            dbSurvey.Status = documentSurvey.Status;
-            dbSurvey.UpdatedAt = DateTime.Now;
-
-            var incomingItemIds = documentSurvey.SurveyItems?.Select(i => i.Id).Where(x => x > 0).ToList() ?? new List<int>();
-            
-            var toDeleteItems = dbSurvey.SurveyItems!.Where(i => !incomingItemIds.Contains(i.Id)).ToList();
-            _context.DocumentSurveyItems.RemoveRange(toDeleteItems);
-
-            foreach (var ri in documentSurvey.SurveyItems ?? new List<DocumentSurveyItem>())
+            using var context = await _contextFactory.CreateDbContextAsync();
+            using var transaction = await context.Database.BeginTransactionAsync();
+            try
             {
-                var ei = dbSurvey.SurveyItems!.FirstOrDefault(i => i.Id == ri.Id && i.Id > 0);
-                if (ei != null)
+                var dbSurvey = await context.DocumentSurveys
+                    .Include(ds => ds.SurveyItems!)
+                        .ThenInclude(si => si.CheckBox)
+                    .FirstOrDefaultAsync(ds => ds.Id == id);
+
+                if (dbSurvey == null) return null;
+
+                dbSurvey.Status = documentSurvey.Status;
+                dbSurvey.UpdatedAt = DateTime.Now;
+
+                var incomingItemIds = documentSurvey.SurveyItems?.Select(i => i.Id).Where(x => x > 0).ToList() ?? new List<int>();
+                var toDeleteItems = dbSurvey.SurveyItems!.Where(i => !incomingItemIds.Contains(i.Id)).ToList();
+                context.DocumentSurveyItems.RemoveRange(toDeleteItems);
+
+                foreach (var ri in documentSurvey.SurveyItems ?? new List<DocumentSurveyItem>())
                 {
-                    ei.Answer = ri.Answer;
-                    ei.UpdatedAt = DateTime.Now;
-
-                    var incomingDetailIds = ri.CheckBox?.Select(d => d.Id).Where(x => x > 0).ToList() ?? new List<int>();
-                    var toDeleteDetails = ei.CheckBox!.Where(d => !incomingDetailIds.Contains(d.Id)).ToList();
-                    _context.DocumentItemDetails.RemoveRange(toDeleteDetails);
-
-                    foreach (var rd in ri.CheckBox ?? new List<DocumentItemDetail>())
+                    var ei = dbSurvey.SurveyItems!.FirstOrDefault(i => i.Id == ri.Id && i.Id > 0);
+                    if (ei != null)
                     {
-                        var ed = ei.CheckBox!.FirstOrDefault(d => d.Id == rd.Id && d.Id > 0);
-                        if (ed != null)
+                        ei.Answer = ri.Answer;
+                        ei.UpdatedAt = DateTime.Now;
+
+                        var incomingDetailIds = ri.CheckBox?.Select(d => d.Id).Where(x => x > 0).ToList() ?? new List<int>();
+                        var toDeleteDetails = ei.CheckBox!.Where(d => !incomingDetailIds.Contains(d.Id)).ToList();
+                        context.DocumentItemDetails.RemoveRange(toDeleteDetails);
+
+                        foreach (var rd in ri.CheckBox ?? new List<DocumentItemDetail>())
                         {
-                            ed.IsChecked = rd.IsChecked;
-                            ed.UpdatedAt = DateTime.Now;
-                        }
-                        else
-                        {
-                            rd.Id = 0;
-                            rd.CreatedAt = DateTime.Now;
-                            rd.UpdatedAt = DateTime.Now;
-                            ei.CheckBox!.Add(rd);
+                            var ed = ei.CheckBox!.FirstOrDefault(d => d.Id == rd.Id && d.Id > 0);
+                            if (ed != null)
+                            {
+                                ed.IsChecked = rd.IsChecked;
+                                ed.UpdatedAt = DateTime.Now;
+                            }
+                            else
+                            {
+                                rd.Id = 0;
+                                rd.CreatedAt = DateTime.Now;
+                                rd.UpdatedAt = DateTime.Now;
+                                ei.CheckBox!.Add(rd);
+                            }
                         }
                     }
+                    else
+                    {
+                        ri.Id = 0;
+                        ri.DocumentSurveyId = dbSurvey.Id;
+                        ri.CreatedAt = DateTime.Now;
+                        ri.UpdatedAt = DateTime.Now;
+                        dbSurvey.SurveyItems!.Add(ri);
+                    }
                 }
-                else
-                {
-                    ri.Id = 0;
-                    ri.DocumentSurveyId = dbSurvey.Id;
-                    ri.CreatedAt = DateTime.Now;
-                    ri.UpdatedAt = DateTime.Now;
-                    dbSurvey.SurveyItems!.Add(ri);
-                }
-            }
 
-            await _context.SaveChangesAsync();
-            return dbSurvey;
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return dbSurvey;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
+        public async Task<DocumentSurvey?> UpdateDocumentSurveyFromLatestTemplate(string id, DocumentSurvey documentSurvey)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            using var transaction = await context.Database.BeginTransactionAsync();
+            try
+            {
+                var dbSurvey = await context.DocumentSurveys
+                    .Include(ds => ds.SurveyItems)!
+                    .ThenInclude(si => si.CheckBox)
+                    .FirstOrDefaultAsync(ds => ds.Id == id);
+
+                if (dbSurvey == null) return null;
+
+                var oldItems = dbSurvey.SurveyItems?.ToList() ?? new List<DocumentSurveyItem>();
+                dbSurvey.UpdatedAtTemplate = documentSurvey.UpdatedAtTemplate;
+                dbSurvey.UpdatedAt = DateTime.Now;
+                dbSurvey.TemplateHeaderId = documentSurvey.TemplateHeaderId;
+
+                if (dbSurvey.SurveyItems != null && dbSurvey.SurveyItems.Any())
+                {
+                    context.DocumentSurveyItems.RemoveRange(dbSurvey.SurveyItems);
+                    await context.SaveChangesAsync();
+                }
+
+                var newItemsToInsert = new List<DocumentSurveyItem>();
+                foreach (var templateItem in documentSurvey.SurveyItems ?? new List<DocumentSurveyItem>())
+                {
+                    var match = oldItems.FirstOrDefault(o => o.Question == templateItem.Question && o.Type == templateItem.Type);
+                    var newItem = new DocumentSurveyItem
+                    {
+                        DocumentSurveyId = id,
+                        Question = templateItem.Question,
+                        Type = templateItem.Type,
+                        OrderNo = templateItem.OrderNo,
+                        TemplateItemId = templateItem.TemplateItemId,
+                        Answer = match?.Answer ?? "",
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now,
+                        CheckBox = new List<DocumentItemDetail>()
+                    };
+
+                    if (templateItem.Type == QuestionType.CheckBox)
+                    {
+                        foreach (var templateDetail in templateItem.CheckBox ?? new List<DocumentItemDetail>())
+                        {
+                            var detailMatch = match?.CheckBox?.FirstOrDefault(c => c.Item == templateDetail.Item);
+                            newItem.CheckBox.Add(new DocumentItemDetail
+                            {
+                                Item = templateDetail.Item,
+                                TemplateItemDetailId = templateDetail.TemplateItemDetailId,
+                                IsChecked = detailMatch?.IsChecked ?? false,
+                                CreatedAt = DateTime.Now,
+                                UpdatedAt = DateTime.Now
+                            });
+                        }
+                    }
+                    newItemsToInsert.Add(newItem);
+                }
+
+                dbSurvey.SurveyItems = newItemsToInsert;
+                context.DocumentSurveys.Update(dbSurvey);
+                
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                
+                return dbSurvey;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<bool> DeleteDocumentSurveyAsync(string id)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            using var transaction = await context.Database.BeginTransactionAsync();
+            try
+            {
+                var survey = await context.DocumentSurveys.FindAsync(id);
+                if (survey == null) return false;
+
+                context.DocumentSurveys.Remove(survey);
+                var result = await context.SaveChangesAsync() > 0;
+                await transaction.CommitAsync();
+                return result;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
+        }
+        
         public async Task<DocumentSurvey?> UpdateDocumentSurveyStatusAsync(string id, string status)
         {
-            var survey = await _context.DocumentSurveys.FindAsync(id);
+            using var context = await _contextFactory.CreateDbContextAsync();
+            var survey = await context.DocumentSurveys.FindAsync(id);
             if (survey == null || !Enum.TryParse<StatusType>(status, true, out var statusEnum)) 
                 return null;
 
             survey.Status = statusEnum;
             survey.UpdatedAt = DateTime.Now;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return survey;
-        }
-
-        public async Task<bool> DeleteDocumentSurveyAsync(string id)
-        {
-            var survey = await _context.DocumentSurveys.FindAsync(id);
-            if (survey == null) return false;
-
-            _context.DocumentSurveys.Remove(survey);
-            return await _context.SaveChangesAsync() > 0;
         }
     }
 }

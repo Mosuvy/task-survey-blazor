@@ -3,7 +3,10 @@
 @layout MainLayout
 @rendermode InteractiveServer
 @inject ISurveyService SurveyService
+@inject IUserService UserService
 @inject NavigationManager NavigationManager
+@inject TaskSurvey.StateServices.AuthState AuthState
+@inject IJSRuntime JS
 
 <div class="container-fluid px-4 py-4">
     <!-- Header Section -->
@@ -12,12 +15,17 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h3 class="fw-bold text-dark mb-1">Survey Management</h3>
-                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Manage and track survey submissions</p>
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">
+                        @(isSupervisor ? "Review and approve survey submissions" : "Manage and track survey submissions")
+                    </p>
                 </div>
-                <button class="btn text-white shadow-sm px-4" @onclick='() => NavigationManager.NavigateTo("/surveys/form")'
-                        style="background: #0ea5e9; border: none;">
-                    <i class="bi bi-plus-circle me-2"></i>Create Survey
-                </button>
+                @if (!isSupervisor)
+                {
+                    <button class="btn text-white shadow-sm px-4" @onclick='() => NavigationManager.NavigateTo("/surveys/form")'
+                            style="background: #0ea5e9; border: none;">
+                        <i class="bi bi-plus-circle me-2"></i>Create Survey
+                    </button>
+                }
             </div>
         </div>
     </div>
@@ -41,8 +49,8 @@
                     <select class="form-select" @onchange="OnStatusFilterChanged" style="font-size: 0.95rem;">
                         <option value="">All Status</option>
                         <option value="Draft">Draft</option>
-                        <option value="ConfirmToApprove">Confirm To Approve</option>
-                        <option value="Approved">Approved</option>
+                        <option value="ConfirmToApprove">Pending Approval</option>
+                        <option value="Confirmed">Confirmed</option>
                         <option value="Rejected">Rejected</option>
                     </select>
                 </div>
@@ -75,8 +83,12 @@
                             <i class="bi bi-clock-fill fs-4"></i>
                         </div>
                         <div>
-                            <p class="text-muted mb-0" style="font-size: 0.85rem;">Draft</p>
-                            <h4 class="fw-bold mb-0">@surveys.Count(s => s.Status == "Draft")</h4>
+                            <p class="text-muted mb-0" style="font-size: 0.85rem;">
+                                @(isSupervisor ? "Pending" : "Draft")
+                            </p>
+                            <h4 class="fw-bold mb-0">
+                                @(isSupervisor ? surveys.Count(s => s.Status == "ConfirmToApprove") : surveys.Count(s => s.Status == "Draft"))
+                            </h4>
                         </div>
                     </div>
                 </div>
@@ -90,7 +102,7 @@
                             <i class="bi bi-check-circle-fill fs-4"></i>
                         </div>
                         <div>
-                            <p class="text-muted mb-0" style="font-size: 0.85rem;">Confirm</p>
+                            <p class="text-muted mb-0" style="font-size: 0.85rem;">Confirmed</p>
                             <h4 class="fw-bold mb-0">@surveys.Count(s => s.Status == "Confirmed")</h4>
                         </div>
                     </div>
@@ -119,7 +131,8 @@
         <div class="card-header bg-white py-3 px-3 border-bottom">
             <div class="d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-table me-2" style="color: #0ea5e9;"></i>Survey List
+                    <i class="bi bi-table me-2" style="color: #0ea5e9;"></i>
+                    @(isSupervisor ? "Surveys for Review" : "My Surveys")
                 </h6>
                 <span class="badge rounded-pill" style="background: #0ea5e9; font-size: 0.85rem;">
                     @filteredSurveys.Count Results
@@ -145,7 +158,9 @@
                             <tr>
                                 <td colspan="6" class="text-center py-5 text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                    <p class="mb-0">No surveys found</p>
+                                    <p class="mb-0">
+                                        @(isSupervisor ? "No surveys pending for review" : "No surveys found")
+                                    </p>
                                 </td>
                             </tr>
                         }
@@ -173,9 +188,10 @@
                                         </span>
                                     </td>
                                     <td class="px-3 py-3 text-center">
-                                        <button class="btn btn-sm text-white px-3" @onclick="() => EditSurvey(survey.DocumentId)"
+                                        <button class="btn btn-sm text-white px-3" @onclick="() => ViewSurvey(survey.DocumentId)"
                                                 style="background: #0ea5e9; border: none;">
-                                            <i class="bi bi-pencil-square me-1"></i>Edit
+                                            <i class="bi bi-@(isSupervisor ? "eye" : "pencil-square") me-1"></i>
+                                            @(isSupervisor ? "Review" : "Edit")
                                         </button>
                                     </td>
                                 </tr>
@@ -191,19 +207,96 @@
 @code {
     private List<SurveyHeaderResponseDTO> surveys = new();
     private List<SurveyHeaderResponseDTO> filteredSurveys = new();
+    private List<string> supervisedUserIds = new();
     
     private string searchQuery = "";
     private string selectedStatus = "";
+    private bool isSupervisor = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await LoadData();
+        if (firstRender)
+        {
+            await LoadAuthStateFromSession();
+            
+            isSupervisor = AuthState.CurrentUser?.RoleId == 1;
+            
+            if (isSupervisor)
+            {
+                await LoadSupervisedUsers();
+            }
+            await LoadData();
+            
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadAuthStateFromSession()
+    {
+        try
+        {
+            var userJson = await JS.InvokeAsync<string>("sessionStorage.getItem", "UserSession");
+            
+            if (!string.IsNullOrEmpty(userJson))
+            {
+                var user = JsonSerializer.Deserialize<User>(userJson);
+                if (user != null)
+                {
+                    AuthState.SetAuthenticationState(user);
+                    return;
+                }
+            }
+            
+            NavigationManager.NavigateTo("/login", true);
+        }
+        catch (Exception)
+        {
+            NavigationManager.NavigateTo("/login", true);
+        }
+    }
+
+    private async Task LoadSupervisedUsers()
+    {
+        try
+        {
+            var allUsers = await UserService.GetUsers();
+            
+            supervisedUserIds = allUsers
+                .Where(u => u.Supervisor != null && u.Supervisor.Id == AuthState.CurrentUser?.Id)
+                .Select(u => u.Id)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading supervised users: {ex.Message}");
+        }
     }
 
     private async Task LoadData()
     {
-        surveys = await SurveyService.GetSurveyHeaders();
-        ApplyFilters();
+        try
+        {
+            if (isSupervisor)
+            {
+                var tempSurveys = new List<SurveyHeaderResponseDTO>();
+                foreach (var userId in supervisedUserIds)
+                {
+                    var userSurveys = await SurveyService.GetDocumentSurveyForSupervisor(userId, "ConfirmToApprove");
+                    if (userSurveys != null) tempSurveys.AddRange(userSurveys);
+                }
+                surveys = tempSurveys;
+            }
+            else if (AuthState.CurrentUser != null)
+            {
+                surveys = await SurveyService.GetSurveyHeaderByUserId(AuthState.CurrentUser.Id) ?? new();
+            }
+            
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading surveys: {ex.Message}");
+        }
     }
 
     private void OnStatusFilterChanged(ChangeEventArgs e)
@@ -232,7 +325,7 @@
         filteredSurveys = result.OrderByDescending(s => s.CreatedAt).ToList();
     }
 
-    private void EditSurvey(string id) => NavigationManager.NavigateTo($"/surveys/form?surveyId={id}");
+    private void ViewSurvey(string id) => NavigationManager.NavigateTo($"/surveys/form?surveyId={id}");
 
     private string GetStatusBadgeClass(string status) => status switch
     {
