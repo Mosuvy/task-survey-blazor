@@ -6,7 +6,6 @@ using TaskSurvey.Infrastructure.Repositories;
 using TaskSurvey.Infrastructure.Repositories.IRepositories;
 using TaskSurvey.Infrastructure.Services;
 using TaskSurvey.Infrastructure.Services.IServices;
-using TaskSurvey.Infrastructure.Utils;
 using TaskSurvey.StateServices;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -39,7 +38,6 @@ builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IPositionRepository, PositionRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();
 builder.Services.AddScoped<ITemplateRepository, TemplateRepository>();
 builder.Services.AddScoped<ISurveyRepository, SurveyRepository>();
 
@@ -67,8 +65,34 @@ if (!app.Environment.IsDevelopment())
     {
         var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>();
         using var db = factory.CreateDbContext();
-        db.Database.EnsureDeleted();
-        db.Database.Migrate();
+        
+        bool success = false;
+        int retries = 0;
+
+        while (!success && retries < 10)
+        {
+            try
+            {
+                Console.WriteLine($"Mencoba koneksi ke database (Percobaan {retries + 1})...");
+                db.Database.EnsureDeleted();
+                Console.WriteLine("Database lama berhasil di-drop.");
+                db.Database.Migrate();
+                Console.WriteLine("Migrasi berhasil dijalankan.");
+                
+                success = true;
+            }
+            catch (Exception ex)
+            {
+                retries++;
+                Console.WriteLine($"Gagal: {ex.Message}. Menunggu 5 detik...");
+                Thread.Sleep(5000);
+            }
+        }
+
+        if (!success)
+        {
+            Console.WriteLine("Gagal menjalankan migrasi setelah beberapa kali percobaan. Aplikasi mungkin akan error.");
+        }
     }
 }
 
