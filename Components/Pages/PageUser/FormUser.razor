@@ -141,9 +141,10 @@
                 
                 <div class="card-body p-4">
                     <div class="row g-3">
+                        <!-- Supervisor Id -->
                         <div class="col-md-4">
                             <label class="form-label fw-semibold text-title mb-2">
-                                Officer ID <span class="text-danger">*</span>
+                                Supervisor ID <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
                                 <input type="text" class="form-control bg-main border-custom @(hasAttemptedSubmit && string.IsNullOrWhiteSpace(reqDto.SupervisorId) ? "is-invalid" : "")" 
@@ -160,11 +161,13 @@
                                 </div>
                             }
                         </div>
+                        <!-- Supervisor Name -->
                         <div class="col-md-4">
                             <label class="form-label fw-semibold text-title mb-2">Name</label>
                             <input type="text" class="form-control bg-main border-custom text-body" 
                                    @bind="selectedSupName" readonly />
                         </div>
+                        <!-- Supervisor Position -->
                         <div class="col-md-4">
                             <label class="form-label fw-semibold text-title mb-2">Position</label>
                             <input type="text" class="form-control bg-main border-custom text-body" 

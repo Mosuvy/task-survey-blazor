@@ -68,7 +68,7 @@
                 </div>
             }
 
-            <!-- Supervisor View Notice -->
+            <!-- Supervisor Notice -->
             @if (isSupervisor)
             {
                 <div class="alert alert-info border-0 shadow-sm mb-3 d-flex align-items-center" role="alert">
@@ -206,7 +206,7 @@
                 </div>
             </div>
 
-            <!-- Survey Items (Collapsible) -->
+            <!-- Survey Items -->
             <div class="card border-custom shadow-sm rounded-3 mb-3 bg-card">
                 <div class="card-header py-3 px-4 border-bottom border-custom bg-card"
                      style="cursor: pointer;"
@@ -299,7 +299,6 @@
                                     else if (item.Type == QuestionType.CheckBox)
                                     {
                                         <div class="card border-custom @(isViewOnly ? "bg-main" : "") p-3 rounded-3">
-                                            <!-- Checkbox items dari template -->
                                             @foreach (var detail in item.CheckBox)
                                             {
                                                 <div class="form-check mb-2">
@@ -318,7 +317,6 @@
                                                 </div>
                                             }
 
-                                            <!-- Checkbox "Lainnya" (virtual) -->
                                             @{
                                                 var lainnyaChecked = !string.IsNullOrWhiteSpace(item.Answer);
                                                 var collapseId = $"collapse-lainnya-{item.OrderNo}";
@@ -344,7 +342,6 @@
                                                 </label>
                                             </div>
 
-                                            <!-- Textbox untuk "Lainnya" dengan Bootstrap Collapse -->
                                             <div class="collapse @(lainnyaChecked ? "show" : "")" id="@collapseId">
                                                 <div class="mt-2">
                                                     <input type="text" 
