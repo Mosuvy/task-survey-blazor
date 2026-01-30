@@ -71,8 +71,6 @@ namespace TaskSurvey.Components.Pages.IndexTemplate
 
         private async Task LoadData()
         {
-            Console.WriteLine("DEBUG: Position ID is " + userPositionId);
-            
             templates = await TemplateService.GetTemplateByPositionId(userPositionId) ?? new();
             ApplyFilters();
         }
