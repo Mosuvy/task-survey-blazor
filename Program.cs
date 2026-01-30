@@ -20,6 +20,10 @@ builder.Services.AddRazorComponents()
 //     )
 // );
 
+builder.Services.AddScoped(sp => new HttpClient { 
+    BaseAddress = new Uri(builder.Configuration["BaseUrl"] ?? builder.Environment.WebRootPath) 
+});
+
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -53,6 +57,15 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+
+    // -------------------------------- COMMENT BAGIAN SINI AGAR TIDAK MIGRATE LAGI -------------------------------
+    using (var scope = app.Services.CreateScope())
+    {
+        var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+        using var db = factory.CreateDbContext();
+        db.Database.Migrate();
+    }
+    // ------------------------------------------------------------------------------------------------------------
 }
 
 app.UseHttpsRedirection();
