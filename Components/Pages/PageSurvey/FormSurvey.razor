@@ -234,11 +234,16 @@
                         }
                         else
                         {
-                            @foreach (var item in reqDto.SurveyItems.OrderBy(x => x.OrderNo))
+                            var orderedItems = reqDto.SurveyItems.OrderBy(x => x.OrderNo).ToList();
+                            
+                            @for (int i = 0; i < orderedItems.Count; i++)
                             {
+                                var item = orderedItems[i];
+                                var displayOrderNo = i + 1;
+                                
                                 <div class="mb-4">
                                     <label class="form-label fw-bold text-title mb-3" style="font-size: 1rem;">
-                                        @item.OrderNo. @item.Question
+                                        @displayOrderNo. @item.Question
                                         @if (!isViewOnly && !isSupervisor)
                                         {
                                             <span class="text-danger">*</span>
@@ -305,13 +310,13 @@
                                                     <input class="form-check-input" type="checkbox" 
                                                            checked="@detail.IsChecked"
                                                            disabled="@(isViewOnly || isSupervisor)"
-                                                           id="det-@detail.Id-@item.OrderNo"
+                                                           id="det-@detail.Id-@displayOrderNo"
                                                            @onchange="@((ChangeEventArgs e) => {
                                                                if (!isViewOnly && !isSupervisor) {
                                                                    detail.IsChecked = (bool)(e.Value ?? false);
                                                                }
                                                            })" />
-                                                    <label class="form-check-label ms-2 text-body" for="det-@detail.Id-@item.OrderNo">
+                                                    <label class="form-check-label ms-2 text-body" for="det-@detail.Id-@displayOrderNo">
                                                         @detail.Item
                                                     </label>
                                                 </div>
@@ -319,8 +324,8 @@
 
                                             @{
                                                 var lainnyaChecked = !string.IsNullOrWhiteSpace(item.Answer);
-                                                var collapseId = $"collapse-lainnya-{item.OrderNo}";
-                                                var checkboxId = $"det-lainnya-{item.OrderNo}";
+                                                var collapseId = $"collapse-lainnya-{displayOrderNo}";
+                                                var checkboxId = $"det-lainnya-{displayOrderNo}";
                                             }
                                             <div class="form-check mb-2">
                                                 <input class="form-check-input" 
