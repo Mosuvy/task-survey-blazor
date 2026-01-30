@@ -71,7 +71,7 @@ namespace TaskSurvey.Components.Pages.IndexTemplate
 
         private async Task LoadData()
         {
-            templates = await TemplateService.GetTemplateByPositionId(userPositionId) ?? new();
+            templates = await TemplateService.GetTemplateHeaders();
             ApplyFilters();
         }
 

@@ -19,6 +19,7 @@ public partial class Profile : ComponentBase
     private UserResponseDTO? supervisor;
     private bool isSupervisor = false;
     private bool isUser = false;
+    private bool isOverseer = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -45,6 +46,7 @@ public partial class Profile : ComponentBase
                     currentUser = user;
                     isSupervisor = user.RoleId == 1;
                     isUser = user.RoleId == 2;
+                    isOverseer = user.RoleId == 3;
                     return;
                 }
             }
@@ -83,6 +85,7 @@ public partial class Profile : ComponentBase
                     {
                         supervisor = userData.Supervisor;
                     }
+                    
                 }
             }
         }

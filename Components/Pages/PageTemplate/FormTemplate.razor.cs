@@ -55,7 +55,7 @@ public partial class FormTemplate : ComponentBase
             }
 
             positions = await PositionService.GetPositions();
-            allTemplates = await TemplateService.GetTemplateByPositionId(userPositionId) ?? new();
+            allTemplates = await TemplateService.GetTemplateHeaders();
 
             var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
             if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("templateId", out var id))

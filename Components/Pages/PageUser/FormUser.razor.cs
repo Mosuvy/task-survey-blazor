@@ -24,7 +24,6 @@ public partial class FormUser : ComponentBase
 
     private UserRequestDTO reqDto = new();
     private List<PositionResponseDTO> positions = new();
-    private List<UserResponseDTO> supLookupList = new();
     private List<UserResponseDTO> allUsersList = new();
     
     private string displayId = "";
@@ -84,7 +83,6 @@ public partial class FormUser : ComponentBase
     protected override async Task OnInitializedAsync()
     {
         positions = await PositionService.GetPositions();
-        supLookupList = (await UserService.GetUserByRoleId(1)) ?? new();
         allUsersList = await UserService.GetUsers();
 
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
@@ -216,7 +214,28 @@ public partial class FormUser : ComponentBase
 
         try 
         {
-            reqDto.RoleId = 2;
+            var selectedSupervisor = allUsersList.FirstOrDefault(u => u.Id == reqDto.SupervisorId);
+
+            if (selectedSupervisor != null)
+            {
+                if (selectedSupervisor.Role?.Id == 1)
+                {
+                    reqDto.RoleId = 3;
+                }
+                else if (selectedSupervisor.Role?.Id == 3)
+                {
+                    reqDto.RoleId = 2;
+                }
+                else 
+                {
+                    reqDto.RoleId = 2; 
+                }
+            }
+            else
+            {
+                reqDto.RoleId = 2; 
+            }
+
             reqDto.PasswordHash = ""; 
 
             if (isEditMode)

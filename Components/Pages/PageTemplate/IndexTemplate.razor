@@ -33,6 +33,18 @@
                            @bind="searchQuery" @bind:event="oninput" @onkeyup="ApplyFilters" 
                            style="font-size: 0.95rem;" />
                 </div>
+                @* <div class="col-md-4">
+                    <label class="form-label fw-semibold text-title mb-1" style="font-size: 0.85rem;">
+                        <i class="bi bi-funnel me-1 text-primary"></i>Position
+                    </label>
+                    <select class="form-select border-custom" @onchange="OnPositionFilterChanged" style="font-size: 0.95rem;">
+                        <option value="0">All Positions</option>
+                        @foreach (var p in positions)
+                        {
+                            <option value="@p.Id">@p.PositionLevel</option>
+                        }
+                    </select>
+                </div> *@
             </div>
         </div>
     </div>

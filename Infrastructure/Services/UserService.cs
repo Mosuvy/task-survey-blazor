@@ -31,6 +31,11 @@ namespace TaskSurvey.Infrastructure.Services
             return UserMapper.ToUserResponseDto(user);
         }
 
+        public async Task<List<string>> GetSubordinateIds(string supervisorId)
+        {
+            return await _repository.GetSubordinateIdsAsync(supervisorId);
+        }
+
         public async Task<List<UserResponseDTO>?> GetUserByRoleId(int id)
         {
             var users = await _repository.GetUserByRoleIdAsync(id);

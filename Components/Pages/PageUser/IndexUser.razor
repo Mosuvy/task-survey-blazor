@@ -173,8 +173,10 @@
                                     </td>
                                     <td class="px-3 py-3 text-body">@user.PositionName</td>
                                     <td class="px-3 py-3">
-                                        <span class="badge rounded-pill @(user.RoleId == 1 ? "badge-success-custom" : "")" 
-                                              style="@(user.RoleId == 2 ? "background-color: var(--bs-secondary);" : "")">
+                                        <span class="badge rounded-pill 
+                                            @(user.RoleId == 1 ? "badge-success-custom" : "")" 
+                                            style="@(user.RoleId == 2 ? "background-color: var(--bs-secondary);" : 
+                                                    user.RoleId == 3 ? "background-color: #4F46E5; color: white;" : "")">
                                             @user.Role?.RoleName
                                         </span>
                                     </td>
@@ -188,7 +190,7 @@
                                             <span class="text-muted small">-</span>
                                         }
                                     </td>
-                                    @if (isSupervisor)
+                                    @if (isSupervisor || isOverseer)
                                     {
                                         <td class="px-3 py-3 text-center">
                                             <button class="btn btn-sm btn-primary text-white px-3" @onclick="() => EditUser(user.Id)">

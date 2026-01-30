@@ -123,6 +123,12 @@ namespace TaskSurvey.Infrastructure.Data
                     Id = 2,
                     RoleName = "User",  
                     CreatedAt = DateTime.Now
+                },
+                new Role
+                {
+                    Id = 3,
+                    RoleName = "Overseer",
+                    CreatedAt = DateTime.Now
                 }
             );
             modelBuilder.Entity<Position>().HasData(
@@ -155,18 +161,18 @@ namespace TaskSurvey.Infrastructure.Data
             modelBuilder.Entity<User>().HasData(
                 new User
                 {
-                    Id = "10000001",
+                    Id = "00000001",
                     Username = "Wahyu Johan",
                     PasswordHash = password,
                     PositionId = 1,
                     PositionName = "Officer Leader",
-                    RoleId = 1,
+                    RoleId = 3,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
                 },
                 new User
                 {
-                    Id = "10000002",
+                    Id = "00000002",
                     Username = "Edi",
                     PasswordHash = password,
                     PositionId = 3,
@@ -177,7 +183,7 @@ namespace TaskSurvey.Infrastructure.Data
                 },
                 new User
                 {
-                    Id = "00000001",
+                    Id = "00000003",
                     Username = "Andhika",
                     PasswordHash = password,
                     PositionId = 1,
@@ -192,8 +198,15 @@ namespace TaskSurvey.Infrastructure.Data
                 new UserRelation
                 {
                     Id = 1,
+                    UserId = "00000003",
+                    SupervisorId = "00000001",
+                    CreatedAt = DateTime.Now
+                },
+                new UserRelation
+                {
+                    Id = 2,
                     UserId = "00000001",
-                    SupervisorId = "10000001",
+                    SupervisorId = "00000002",
                     CreatedAt = DateTime.Now
                 }
             );
@@ -257,7 +270,7 @@ namespace TaskSurvey.Infrastructure.Data
                 new DocumentSurvey
                 {
                     Id = "SURVEY/2601/0001",
-                    RequesterId = "00000001",
+                    RequesterId = "00000003",
                     Status = StatusType.Draft,
                     TemplateHeaderId = "TEMPLATE/2601/001",
                     CreatedAt = DateTime.Now,

@@ -36,15 +36,26 @@ namespace TaskSurvey.Infrastructure.Mappers
                 }
 
                 UserResponseDTO? supervisorDto = null;
-                var relation = user.SupervisorRelations?.FirstOrDefault();
-                if (relation?.Supervisor != null)
+                var supRel = user.SupervisorRelations?.FirstOrDefault();
+                if (supRel?.Supervisor != null)
                 {
-                    var s = relation.Supervisor;
                     supervisorDto = new UserResponseDTO
                     {
-                        Id = s.Id,
-                        Username = s.Username,
-                        PositionName = s.PositionName,
+                        Id = supRel.Supervisor.Id,
+                        Username = supRel.Supervisor.Username,
+                        PositionName = supRel.Supervisor.PositionName,
+                    };
+                }
+
+                UserResponseDTO? subordinatesDto = null;
+                var subRel = user.SubordinateRelations?.FirstOrDefault();
+                if (subRel?.User != null)
+                {
+                    subordinatesDto = new UserResponseDTO
+                    {
+                        Id = subRel.User.Id,
+                        Username = subRel.User.Username,
+                        PositionName = subRel.User.PositionName,
                     };
                 }
 
@@ -58,6 +69,7 @@ namespace TaskSurvey.Infrastructure.Mappers
                     RoleId = user.RoleId,
                     Role = roleDto,
                     Supervisor = supervisorDto,
+                    Subordinates = subordinatesDto,
                     CreatedAt = user.CreatedAt,
                     UpdatedAt = user.UpdatedAt
                 };

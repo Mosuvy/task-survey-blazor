@@ -41,7 +41,7 @@
             }
 
             <!-- View Only Notice -->
-            @if (isViewOnly && !isSupervisor)
+            @if (isViewOnly && !isSupervisor && !isOverseer)
             {
                 <div class="alert alert-info border-0 shadow-sm mb-3 d-flex align-items-center" role="alert">
                     <i class="bi bi-info-circle-fill me-2 fs-5"></i>
@@ -68,13 +68,15 @@
                 </div>
             }
 
-            <!-- Supervisor Notice -->
-            @if (isSupervisor)
+            <!-- Supervisor And Overseer Notice -->
+            @if (canReview && reqDto.RequesterId != AuthState.CurrentUser?.Id)
             {
                 <div class="alert alert-info border-0 shadow-sm mb-3 d-flex align-items-center" role="alert">
                     <i class="bi bi-info-circle-fill me-2 fs-5"></i>
                     <div>
-                        <strong>Supervisor Mode:</strong> You are viewing this survey in read-only mode. You can only approve or reject this submission.
+                        <strong>@(isOverseer ? "Overseer" : "Supervisor") Mode:</strong> 
+                        You are reviewing a submission from <strong>@(requesterData?.Username)</strong>. 
+                        You can only approve or reject this survey.
                     </div>
                 </div>
             }
@@ -169,7 +171,7 @@
                             <label class="form-label fw-semibold text-title mb-2">
                                 Template ID <span class="text-danger">*</span>
                             </label>
-                            @if (isViewOnly || isSupervisor)
+                            @if (IsInputDisabled())
                             {
                                 <input type="text" class="form-control bg-main border-custom" value="@reqDto.TemplateHeaderId" readonly />
                             }
@@ -181,8 +183,9 @@
                                     </span>
                                     <input type="text" class="form-control bg-main border-custom @(hasAttemptedSubmit && string.IsNullOrEmpty(reqDto.TemplateHeaderId) ? "is-invalid" : "")" 
                                            value="@reqDto.TemplateHeaderId" readonly />
-                                    <button class="btn btn-primary px-3" type="button" @onclick="() => showTemplateModal = true"
-                                            disabled="@isViewOnly">
+                                    <button class="btn btn-primary px-3" type="button" 
+                                            @onclick="() => showTemplateModal = true"
+                                            disabled="@IsInputDisabled()">
                                         <i class="bi bi-search me-1"></i>Select
                                     </button>
                                 </div>
@@ -244,7 +247,7 @@
                                 <div class="mb-4">
                                     <label class="form-label fw-bold text-title mb-3" style="font-size: 1rem;">
                                         @displayOrderNo. @item.Question
-                                        @if (!isViewOnly && !isSupervisor)
+                                        @if (!IsInputDisabled())
                                         {
                                             <span class="text-danger">*</span>
                                         }
@@ -252,13 +255,13 @@
                                     
                                     @if (item.Type == QuestionType.TextBox)
                                     {
-                                        <input type="text" class="form-control border-custom @(isViewOnly ? "bg-main" : "") @(hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer) ? "is-invalid" : "")" 
+                                        <input type="text" class="form-control border-custom @(IsInputDisabled() ? "bg-main" : "") @(hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer) ? "is-invalid" : "")" 
                                                value="@item.Answer" 
                                                placeholder="Type your answer here..." 
-                                               readonly="@isViewOnly"
-                                               disabled="@(isViewOnly || isSupervisor)"
+                                               readonly="@IsInputDisabled()"
+                                               disabled="@IsInputDisabled()"
                                                @onchange="@((ChangeEventArgs e) => {
-                                                   if (!isViewOnly && !isSupervisor) item.Answer = e.Value?.ToString()!;
+                                                   if (!IsInputDisabled()) item.Answer = e.Value?.ToString()!;
                                                })" />
                                         @if (hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer))
                                         {
@@ -269,13 +272,13 @@
                                     }
                                     else if (item.Type == QuestionType.TextArea)
                                     {
-                                        <textarea class="form-control border-custom @(isViewOnly ? "bg-main" : "") @(hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer) ? "is-invalid" : "")" 
+                                        <textarea class="form-control border-custom @(IsInputDisabled() ? "bg-main" : "") @(hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer) ? "is-invalid" : "")" 
                                                   rows="4" 
                                                   placeholder="Type your answer here..." 
-                                                  readonly="@isViewOnly"
-                                                  disabled="@(isViewOnly || isSupervisor)"
+                                                  readonly="@IsInputDisabled()"
+                                                  disabled="@IsInputDisabled()"
                                                   @onchange="@((ChangeEventArgs e) => {
-                                                      if (!isViewOnly && !isSupervisor) item.Answer = e.Value?.ToString()!;
+                                                      if (!IsInputDisabled()) item.Answer = e.Value?.ToString()!;
                                                   })">@item.Answer</textarea>
                                         @if (hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer))
                                         {
@@ -286,13 +289,13 @@
                                     }
                                     else if (item.Type == QuestionType.Number)
                                     {
-                                        <input type="number" class="form-control border-custom @(isViewOnly ? "bg-main" : "") @(hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer) ? "is-invalid" : "")" 
+                                        <input type="number" class="form-control border-custom @(IsInputDisabled() ? "bg-main" : "") @(hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer) ? "is-invalid" : "")" 
                                                value="@item.Answer" 
                                                placeholder="Enter number..." 
-                                               readonly="@isViewOnly"
-                                               disabled="@(isViewOnly || isSupervisor)"
+                                               readonly="@IsInputDisabled()"
+                                               disabled="@IsInputDisabled()"
                                                @onchange="@((ChangeEventArgs e) => {
-                                                   if (!isViewOnly && !isSupervisor) item.Answer = e.Value?.ToString()!;
+                                                   if (!IsInputDisabled()) item.Answer = e.Value?.ToString()!;
                                                })" />
                                         @if (hasAttemptedSubmit && string.IsNullOrWhiteSpace(item.Answer))
                                         {
@@ -303,20 +306,21 @@
                                     }
                                     else if (item.Type == QuestionType.CheckBox)
                                     {
-                                        <div class="card border-custom @(isViewOnly ? "bg-main" : "") p-3 rounded-3">
+                                        <div class="card border-custom @(IsInputDisabled() ? "bg-main" : "") p-3 rounded-3">
                                             @foreach (var detail in item.CheckBox)
                                             {
+                                                var detailCheckboxId = $"det-{detail.Id}-{displayOrderNo}";
                                                 <div class="form-check mb-2">
                                                     <input class="form-check-input" type="checkbox" 
-                                                           checked="@detail.IsChecked"
-                                                           disabled="@(isViewOnly || isSupervisor)"
-                                                           id="det-@detail.Id-@displayOrderNo"
-                                                           @onchange="@((ChangeEventArgs e) => {
-                                                               if (!isViewOnly && !isSupervisor) {
-                                                                   detail.IsChecked = (bool)(e.Value ?? false);
-                                                               }
-                                                           })" />
-                                                    <label class="form-check-label ms-2 text-body" for="det-@detail.Id-@displayOrderNo">
+                                                        checked="@detail.IsChecked"
+                                                        disabled="@IsInputDisabled()"
+                                                        id="@detailCheckboxId"
+                                                        @onchange="@((ChangeEventArgs e) => {
+                                                            if (!IsInputDisabled()) {
+                                                                detail.IsChecked = (bool)(e.Value ?? false);
+                                                            }
+                                                        })" />
+                                                    <label class="form-check-label ms-2 text-body" for="@detailCheckboxId" style="cursor: pointer;">
                                                         @detail.Item
                                                     </label>
                                                 </div>
@@ -325,24 +329,24 @@
                                             @{
                                                 var lainnyaChecked = !string.IsNullOrWhiteSpace(item.Answer);
                                                 var collapseId = $"collapse-lainnya-{displayOrderNo}";
-                                                var checkboxId = $"det-lainnya-{displayOrderNo}";
+                                                var lainnyaCheckboxId = $"det-lainnya-{displayOrderNo}";
                                             }
                                             <div class="form-check mb-2">
                                                 <input class="form-check-input" 
-                                                       type="checkbox"
-                                                       checked="@lainnyaChecked"
-                                                       disabled="@(isViewOnly || isSupervisor)"
-                                                       id="@checkboxId"
-                                                       @onclick="@(async () => {
-                                                           if (!isViewOnly && !isSupervisor) {
-                                                               bool newState = string.IsNullOrWhiteSpace(item.Answer);
-                                                               item.Answer = newState ? " " : string.Empty;
-                                                               StateHasChanged();
-                                                               await Task.Delay(10);
-                                                               await JS.InvokeVoidAsync("toggleLainnyaCollapse", checkboxId, collapseId);
-                                                           }
-                                                       })" />
-                                                <label class="form-check-label ms-2 text-body" for="@checkboxId">
+                                                    type="checkbox"
+                                                    checked="@lainnyaChecked"
+                                                    disabled="@IsInputDisabled()"
+                                                    id="@lainnyaCheckboxId"
+                                                    @onchange="@(async (ChangeEventArgs e) => {
+                                                        if (!IsInputDisabled()) {
+                                                            bool newState = (bool)(e.Value ?? false);
+                                                            item.Answer = newState ? " " : string.Empty;
+                                                            StateHasChanged();
+                                                            await Task.Delay(10);
+                                                            await JS.InvokeVoidAsync("toggleLainnyaCollapse", lainnyaCheckboxId, collapseId);
+                                                        }
+                                                    })" />
+                                                <label class="form-check-label ms-2 text-body" for="@lainnyaCheckboxId" style="cursor: pointer;">
                                                     Lainnya
                                                 </label>
                                             </div>
@@ -350,16 +354,16 @@
                                             <div class="collapse @(lainnyaChecked ? "show" : "")" id="@collapseId">
                                                 <div class="mt-2">
                                                     <input type="text" 
-                                                           class="form-control border-custom @(hasAttemptedSubmit && lainnyaChecked && string.IsNullOrWhiteSpace(item.Answer?.Trim()) ? "is-invalid" : "")"
-                                                           placeholder="Silakan tulis jawaban lainnya..."
-                                                           value="@(item.Answer?.Trim() ?? "")"
-                                                           @oninput="@((ChangeEventArgs e) => {
-                                                               if (!isViewOnly && !isSupervisor) {
-                                                                   var val = e.Value?.ToString() ?? "";
-                                                                   item.Answer = string.IsNullOrWhiteSpace(val) ? " " : val;
-                                                               }
-                                                           })"
-                                                           disabled="@(isViewOnly || isSupervisor)" />
+                                                        class="form-control border-custom @(hasAttemptedSubmit && lainnyaChecked && string.IsNullOrWhiteSpace(item.Answer?.Trim()) ? "is-invalid" : "")"
+                                                        placeholder="Silakan tulis jawaban lainnya..."
+                                                        value="@(item.Answer?.Trim() ?? "")"
+                                                        @oninput="@((ChangeEventArgs e) => {
+                                                            if (!IsInputDisabled()) {
+                                                                var val = e.Value?.ToString() ?? "";
+                                                                item.Answer = string.IsNullOrWhiteSpace(val) ? " " : val;
+                                                            }
+                                                        })"
+                                                        disabled="@IsInputDisabled()" />
                                                     @if (hasAttemptedSubmit && lainnyaChecked && string.IsNullOrWhiteSpace(item.Answer?.Trim()))
                                                     {
                                                         <div class="invalid-feedback d-block">
@@ -386,26 +390,24 @@
 
             <!-- Action Buttons -->
             <div class="d-flex gap-2 flex-wrap mb-5">
-                @if (isSupervisor)
+                @if (canReview && reqDto.Status == StatusType.ConfirmToApprove && reqDto.RequesterId != AuthState.CurrentUser?.Id)
                 {
-                    @if (reqDto.Status == StatusType.ConfirmToApprove)
-                    {
-                        <button class="btn btn-success-custom px-4 py-2 shadow-sm" @onclick="HandleApprove">
-                            <i class="bi bi-check-circle me-2"></i>Approve
-                        </button>
-                        <button class="btn btn-danger-custom px-4 py-2 shadow-sm" @onclick="HandleReject">
-                            <i class="bi bi-x-circle me-2"></i>Reject
-                        </button>
-                    }
+                    <button class="btn btn-success-custom px-4 py-2 shadow-sm" @onclick="HandleApprove">
+                        <i class="bi bi-check-circle me-2"></i>Approve
+                    </button>
+                    <button class="btn btn-danger-custom px-4 py-2 shadow-sm" @onclick="HandleReject">
+                        <i class="bi bi-x-circle me-2"></i>Reject
+                    </button>
                 }
                 else if (!isViewOnly)
                 {
                     <button class="btn btn-success-custom px-4 py-2 shadow-sm" @onclick="ValidateAndShowSubmitModal">
-                        <i class="bi bi-check-circle me-2"></i>Submit
+                        <i class="bi bi-send-fill me-2"></i>Submit Survey
                     </button>
                     <button class="btn btn-warning px-4 py-2 shadow-sm text-white" @onclick="HandleSaveDraft">
                         <i class="bi bi-save me-2"></i>Save Draft
                     </button>
+                    
                     @if (isEditMode && reqDto.Status == StatusType.Draft)
                     {
                         <button class="btn btn-danger-custom px-4 py-2 shadow-sm" @onclick="HandleDelete">
@@ -413,9 +415,9 @@
                         </button>
                     }
                 }
-                
-                <button class="btn btn-outline-secondary px-4 py-2 ms-auto border-custom" @onclick='() => NavigationManager.NavigateTo("/surveys")'>
-                    <i class="bi bi-x-circle me-2"></i>@(isViewOnly || isSupervisor ? "Back" : "Cancel")
+                <button class="btn btn-outline-secondary px-4 py-2 ms-auto border-custom" 
+                        @onclick='() => NavigationManager.NavigateTo("/surveys")'>
+                    <i class="bi bi-arrow-left me-2"></i>Back to List
                 </button>
             </div>
         </div>

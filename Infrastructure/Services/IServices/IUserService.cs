@@ -10,6 +10,7 @@ namespace TaskSurvey.Infrastructure.Services.IServices
     {
         Task<List<UserResponseDTO>> GetUsers();
         Task<UserResponseDTO?> GetUserById(string id);
+        Task<List<string>> GetSubordinateIds(string supervisorId);
         Task<List<UserResponseDTO>?> GetUserByRoleId(int id);
         Task<List<UserResponseDTO>?> GetUserByPositionId(int id);
         Task<UserResponseDTO> CreateUser(UserRequestDTO userDto);

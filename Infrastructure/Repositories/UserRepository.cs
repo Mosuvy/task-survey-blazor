@@ -24,6 +24,7 @@ namespace TaskSurvey.Infrastructure.Repositories
             using var context = await _contextFactory.CreateDbContextAsync();
             return await context.Users.Include(p => p.Position).Include(r => r.Role)
                 .Include(r => r.SupervisorRelations!).ThenInclude(s => s.Supervisor).ThenInclude(s => s!.Position)
+                .Include(s => s.SubordinateRelations!).ThenInclude(s => s.User).ThenInclude(s => s!.Position)
                 .ToListAsync();
         }
         
@@ -32,7 +33,17 @@ namespace TaskSurvey.Infrastructure.Repositories
             using var context = await _contextFactory.CreateDbContextAsync();
             return await context.Users.Include(p => p.Position).Include(r => r.Role)
                 .Include(r => r.SupervisorRelations!).ThenInclude(s => s.Supervisor).ThenInclude(s => s!.Position)
+                .Include(s => s.SubordinateRelations!).ThenInclude(s => s.User).ThenInclude(s => s!.Position)
                 .FirstOrDefaultAsync(u => u.Id == id);
+        }
+
+        public async Task<List<string>> GetSubordinateIdsAsync(string supervisorId)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.UserRelations
+                .Where(usr => usr.SupervisorId == supervisorId)
+                .Select(usr => usr.UserId)
+                .ToListAsync();
         }
 
         public async Task<List<User>?> GetUserByRoleIdAsync(int id)

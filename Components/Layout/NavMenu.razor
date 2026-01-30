@@ -77,7 +77,7 @@
                                             <span>User List</span>
                                         </NavLink>
                                         
-                                        @if (isSupervisor)
+                                        @if (isSupervisor || isOverseer)
                                         {
                                             <NavLink class="submenu-link d-flex align-items-center gap-2 px-4 py-2 rounded-3 ms-5" 
                                                      href="/users/form"
@@ -145,7 +145,7 @@
                                             <span>Survey List</span>
                                         </NavLink>
                                         
-                                        @if (isUser)
+                                        @if (isUser || isOverseer)
                                         {
                                             <NavLink class="submenu-link d-flex align-items-center gap-2 px-4 py-2 rounded-3 ms-5" 
                                                      href="/surveys/form"
@@ -324,6 +324,7 @@
     private bool isSurveysOpen = false;
     private bool isSupervisor = false;
     private bool isUser = false;
+    private bool isOverseer = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -333,6 +334,7 @@
             
             isSupervisor = AuthState.CurrentUser?.RoleId == 1;
             isUser = AuthState.CurrentUser?.RoleId == 2;
+            isOverseer = AuthState.CurrentUser?.RoleId == 3;
             
             StateHasChanged();
         }

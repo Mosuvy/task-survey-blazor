@@ -39,6 +39,8 @@ public partial class FormSurvey : ComponentBase
     private bool isDataLoaded = false;
     private bool isEditMode = false;
     private bool isSupervisor = false;
+    private bool isOverseer = false;
+    private bool canReview = false;
     private bool isViewOnly = false;
     private bool hasBeenSaved = false;
     private bool hasAttemptedSubmit = false;
@@ -51,12 +53,13 @@ public partial class FormSurvey : ComponentBase
         if (firstRender)
         {
             await LoadAuthStateFromSession();
-            
             if (AuthState.CurrentUser != null)
             {
                 isSupervisor = AuthState.CurrentUser.RoleId == 1;
+                isOverseer = AuthState.CurrentUser.RoleId == 3;
+                canReview = isSupervisor || isOverseer;
+                
                 userPositionId = AuthState.CurrentUser.PositionId;
-
                 await InitializeFormData();
                 
                 isDataLoaded = true;
@@ -353,12 +356,20 @@ public partial class FormSurvey : ComponentBase
 
     private async Task HandleApprove()
     {
+        if (!canReview) return;
+
         try
         {
             var result = await JS.InvokeAsync<JsonElement>("Swal.fire", new
             {
                 title = "Approve Survey?",
-                text = $"Approve survey {reqDto.DocumentId} from {requesterData?.Username ?? "N/A"}?",
+                html = $@"
+                    <div class='text-start p-2'>
+                        <p>Approve survey <strong>{reqDto.DocumentId}</strong> dari <strong>{requesterData?.Username ?? "N/A"}</strong>?</p>
+                        <div class='alert alert-info py-2 mb-0' style='font-size: 0.85rem;'>
+                            <i class='bi bi-info-circle me-2'></i>Status akan berubah menjadi <strong>Confirmed</strong>.
+                        </div>
+                    </div>",
                 icon = "success",
                 showCancelButton = true,
                 confirmButtonColor = "#22C55E",
@@ -372,25 +383,33 @@ public partial class FormSurvey : ComponentBase
                 await UpdateStatus("Confirmed", "Survey has been approved successfully!");
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return;
+            await JS.InvokeVoidAsync("Swal.fire", "Error", ex.Message, "error");
         }
     }
 
     private async Task HandleReject()
     {
+        if (!canReview) return;
+
         try
         {
             var result = await JS.InvokeAsync<JsonElement>("Swal.fire", new
             {
                 title = "Reject Survey?",
-                text = $"Reject survey {reqDto.DocumentId} from {requesterData?.Username ?? "N/A"}?",
+                html = $@"
+                    <div class='text-start p-2'>
+                        <p>Apakah Anda yakin ingin menolak survey <strong>{reqDto.DocumentId}</strong> dari <strong>{requesterData?.Username ?? "N/A"}</strong>?</p>
+                        <div class='alert alert-danger py-2 mb-0' style='font-size: 0.85rem;'>
+                            <i class='bi bi-exclamation-triangle-fill me-2'></i>Status akan berubah menjadi <strong>Rejected</strong> dan requester harus mengedit kembali.
+                        </div>
+                    </div>",
                 icon = "warning",
                 showCancelButton = true,
                 confirmButtonColor = "#ef4444",
                 cancelButtonColor = "#6b7280",
-                confirmButtonText = "Yes, Reject",
+                confirmButtonText = "Yes, Reject It",
                 cancelButtonText = "Cancel"
             });
 
@@ -399,9 +418,9 @@ public partial class FormSurvey : ComponentBase
                 await UpdateStatus("Rejected", "Survey has been rejected!");
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return;
+            await JS.InvokeVoidAsync("Swal.fire", "Error", ex.Message, "error");
         }
     }
 
@@ -440,59 +459,57 @@ public partial class FormSurvey : ComponentBase
     private async Task ProcessSave(StatusType status)
     {
         if (isViewOnly) return;
+
         try
         {
             if (string.IsNullOrEmpty(reqDto.TemplateHeaderId))
             {
-                await JS.InvokeVoidAsync("Swal.fire", new
-                {
-                    title = "Error!",
-                    text = "Please select a template first",
-                    icon = "error",
-                    confirmButtonColor = "#4F46E5"
-                });
+                await JS.InvokeVoidAsync("Swal.fire", new { title = "Error!", text = "Please select a template first", icon = "error", confirmButtonColor = "#4F46E5" });
                 return;
             }
 
             reqDto.Status = status;
-            if (isEditMode) await SurveyService.UpdateSurveyHeader(currentSurveyId!, reqDto);
-            else await SurveyService.CreateSurveyHeader(reqDto);
+
+            if (isEditMode) 
+            {
+                await SurveyService.UpdateSurveyHeader(currentSurveyId!, reqDto);
+            }
+            else 
+            {
+                reqDto.RequesterId = AuthState.CurrentUser?.Id!;
+                await SurveyService.CreateSurveyHeader(reqDto);
+            }
             
             hasBeenSaved = true;
-            var message = status == StatusType.Draft ? "Draft saved successfully!" : "Survey submitted successfully!";
+            string msg = status == StatusType.Draft ? "Draft saved successfully!" : "Survey submitted for approval!";
             
-            await JS.InvokeVoidAsync("Swal.fire", new
-            {
-                title = "Success!",
-                text = message,
-                icon = "success",
-                confirmButtonColor = "#4F46E5"
-            });
+            await JS.InvokeVoidAsync("Swal.fire", new { title = "Success!", text = msg, icon = "success", confirmButtonColor = "#4F46E5" });
+            
             await Task.Delay(1500);
             NavigationManager.NavigateTo("/surveys");
         }
         catch (Exception ex) 
         { 
-            await JS.InvokeVoidAsync("Swal.fire", new
-            {
-                title = "Error!",
-                text = ex.Message,
-                icon = "error",
-                confirmButtonColor = "#4F46E5"
-            });
+            await JS.InvokeVoidAsync("Swal.fire", new { title = "Error!", text = ex.Message, icon = "error", confirmButtonColor = "#4F46E5" });
         }
     }
 
     private async Task HandleDelete()
     {
         if (isViewOnly) return;
+
+        if (reqDto.Status != StatusType.Draft)
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new { title = "Access Denied", text = "You can only delete surveys that are in Draft status.", icon = "error" });
+            return;
+        }
         
         try
         {
             var result = await JS.InvokeAsync<JsonElement>("Swal.fire", new
             {
                 title = "Delete Survey?",
-                text = $"Delete survey {reqDto.DocumentId}? This action cannot be undone!",
+                html = $@"Yakin ingin menghapus survey <strong>{reqDto.DocumentId}</strong>?<br/>Tindakan ini tidak bisa dibatalkan.",
                 icon = "warning",
                 showCancelButton = true,
                 confirmButtonColor = "#ef4444",
@@ -504,40 +521,38 @@ public partial class FormSurvey : ComponentBase
             if (result.TryGetProperty("isConfirmed", out var isConfirmed) && isConfirmed.GetBoolean())
             {
                 await SurveyService.DeleteSurveyHeader(currentSurveyId!);
-                await JS.InvokeVoidAsync("Swal.fire", new
-                {
-                    title = "Deleted!",
-                    text = "Survey deleted successfully!",
-                    icon = "success",
-                    confirmButtonColor = "#4F46E5"
-                });
+                await JS.InvokeVoidAsync("Swal.fire", new { title = "Deleted!", text = "Survey deleted successfully!", icon = "success", confirmButtonColor = "#4F46E5" });
+                
                 await Task.Delay(1000);
                 NavigationManager.NavigateTo("/surveys");
             }
         }
         catch (Exception ex) 
         { 
-            await JS.InvokeVoidAsync("Swal.fire", new
-            {
-                title = "Error!",
-                text = ex.Message,
-                icon = "error",
-                confirmButtonColor = "#4F46E5"
-            });
+            await JS.InvokeVoidAsync("Swal.fire", new { title = "Error!", text = ex.Message, icon = "error", confirmButtonColor = "#4F46E5" });
         }
     }
 
     private void DetermineViewOnlyMode()
     {
         if (isSupervisor) isViewOnly = true;
-        else if (isEditMode) isViewOnly = reqDto.Status != StatusType.Draft;
-        else isViewOnly = false;
+        else if (isOverseer)
+        {
+            if (reqDto.RequesterId == AuthState.CurrentUser?.Id) isViewOnly = reqDto.Status != StatusType.Draft;
+            else isViewOnly = true;
+        }
+        else isViewOnly = isEditMode && reqDto.Status != StatusType.Draft;
     }
 
     private async Task LoadRequesterData()
     {
         if (!string.IsNullOrEmpty(reqDto.RequesterId))
             requesterData = await UserService.GetUserById(reqDto.RequesterId);
+    }
+
+    private bool IsInputDisabled()
+    {
+        return isViewOnly || (canReview && reqDto.RequesterId != AuthState.CurrentUser?.Id);
     }
 
     private string GetPageTitle() => isSupervisor ? "Review Survey" : (isViewOnly ? "View Survey" : (isEditMode ? "Edit Survey" : "Create New Survey"));

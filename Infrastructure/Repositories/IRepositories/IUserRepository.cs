@@ -10,6 +10,7 @@ namespace TaskSurvey.Infrastructure.Repositories.IRepositories
     {
         Task<List<User>> GetAllUsersAsync();
         Task<User?> GetUserByIdAsync(string id);
+        Task<List<string>> GetSubordinateIdsAsync(string supervisorId);
         Task<List<User>?> GetUserByRoleIdAsync(int id);
         Task<List<User>?> GetUserByPositionIdAsync(int id);
         Task<User> CreateUserAsync(User user, string supervisor);

@@ -89,7 +89,7 @@
                                 <span class="text-danger">*</span>
                             </label>
                             <select class="form-select border-custom @(reqDto.PositionId == 0 && hasAttemptedSubmit ? "is-invalid" : "")" 
-                                    @bind="reqDto.PositionId" disabled="@(userPositionId != 0)">
+                                    @bind="reqDto.PositionId">
                                 <option value="0">-- Select Position --</option>
                                 @foreach(var p in positions) 
                                 { 

@@ -304,7 +304,7 @@
                         </thead>
                         <tbody>
                             @{
-                                var filteredSup = supLookupList.Where(x => 
+                                var filteredSup = allUsersList.Where(x => 
                                     x.Username.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) || 
                                     x.Id.Contains(searchQuery));
                             }

@@ -23,6 +23,8 @@ namespace TaskSurvey.Components.Pages.IndexSurvey
         private string selectedStatus = "";
         private bool isSupervisor = false;
         private bool isDataLoaded = false;
+        private bool isOverseer = false;
+        private bool canApprove = false;
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
@@ -33,6 +35,9 @@ namespace TaskSurvey.Components.Pages.IndexSurvey
                 if (AuthState.CurrentUser != null)
                 {
                     isSupervisor = AuthState.CurrentUser.RoleId == 1;
+                    isOverseer = AuthState.CurrentUser.RoleId == 3;
+
+                    canApprove = isSupervisor || isOverseer;
                     
                     await InitializePageData();
                     
@@ -63,7 +68,7 @@ namespace TaskSurvey.Components.Pages.IndexSurvey
 
         private async Task InitializePageData()
         {
-            if (isSupervisor)
+            if (canApprove)
             {
                 await LoadSupervisedUsers();
             }
@@ -74,13 +79,10 @@ namespace TaskSurvey.Components.Pages.IndexSurvey
         {
             try
             {
-                var allUsers = await UserService.GetUsers();
                 var currentUserId = AuthState.CurrentUser?.Id;
+                supervisedUserIds = await UserService.GetSubordinateIds(currentUserId!);
                 
-                supervisedUserIds = allUsers
-                    .Where(u => u.Supervisor != null && u.Supervisor.Id == currentUserId)
-                    .Select(u => u.Id)
-                    .ToList();
+                Console.WriteLine($"Loaded {supervisedUserIds.Count} subordinates for user {currentUserId}");
             }
             catch (Exception ex)
             {
@@ -92,24 +94,39 @@ namespace TaskSurvey.Components.Pages.IndexSurvey
         {
             try
             {
-                if (isSupervisor)
+                surveys = new();
+                
+                if (canApprove)
                 {
-                    var tasks = supervisedUserIds.Select(id => 
-                        SurveyService.GetDocumentSurveyForSupervisor(id, "ConfirmToApprove"));
+                    if (supervisedUserIds.Count > 0)
+                    {
+                        var tasks = supervisedUserIds.Select(id => 
+                        {
+                            return SurveyService.GetDocumentSurveyForSupervisor(id, "ConfirmToApprove");
+                        });
+                        
+                        var results = await Task.WhenAll(tasks);
+                        var subordinateSurveys = results.Where(r => r != null).SelectMany(r => r!).ToList();
+                        
+                        surveys.AddRange(subordinateSurveys);
+                    }
                     
-                    var results = await Task.WhenAll(tasks);
-                    surveys = results.Where(r => r != null).SelectMany(r => r!).ToList();
+                    var ownSurveys = await SurveyService.GetSurveyHeaderByUserId(AuthState.CurrentUser!.Id) ?? new();
+                    surveys.AddRange(ownSurveys);
                 }
-                else if (AuthState.CurrentUser != null)
+                else
                 {
-                    surveys = await SurveyService.GetSurveyHeaderByUserId(AuthState.CurrentUser.Id) ?? new();
+                    surveys = await SurveyService.GetSurveyHeaderByUserId(AuthState.CurrentUser!.Id) ?? new();
                 }
+                
+                surveys = surveys.GroupBy(s => s.DocumentId).Select(g => g.First()).ToList();
                 
                 ApplyFilters();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading survey data: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
             }
         }
 

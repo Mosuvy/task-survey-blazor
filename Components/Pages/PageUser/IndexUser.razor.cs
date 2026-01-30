@@ -26,6 +26,7 @@ namespace TaskSurvey.Components.Pages.IndexUser
         private int selectedPosId = 0;
         private bool isSupervisor = false;
         private bool isUser = false;
+        private bool isOverseer = false;
         
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
@@ -35,6 +36,7 @@ namespace TaskSurvey.Components.Pages.IndexUser
                 
                 isSupervisor = AuthState.CurrentUser?.RoleId == 1;
                 isUser = AuthState.CurrentUser?.RoleId == 2;
+                isOverseer = AuthState.CurrentUser?.RoleId == 3;
                 
                 StateHasChanged();
             }
