@@ -101,7 +101,6 @@ namespace TaskSurvey.Components.Pages.IndexSurvey
                 
                 if (canApprove)
                 {
-                    // For supervisors/overseers: load subordinates' surveys
                     if (supervisedUserIds.Count > 0)
                     {
                         var tasks = supervisedUserIds.Select(id => 
@@ -114,7 +113,6 @@ namespace TaskSurvey.Components.Pages.IndexSurvey
                         surveys.AddRange(subordinateSurveys);
                     }
                     
-                    // For overseers: also load their own surveys (including drafts)
                     if (isOverseer)
                     {
                         var ownSurveys = await SurveyService.GetSurveyHeaderByUserId(AuthState.CurrentUser!.Id) ?? new();
@@ -123,14 +121,11 @@ namespace TaskSurvey.Components.Pages.IndexSurvey
                 }
                 else
                 {
-                    // For regular users: load their own surveys
                     surveys = await SurveyService.GetSurveyHeaderByUserId(AuthState.CurrentUser!.Id) ?? new();
                 }
                 
-                // Remove duplicates
                 surveys = surveys.GroupBy(s => s.DocumentId).Select(g => g.First()).ToList();
                 
-                // Apply filters and categorize
                 ApplyFilters();
             }
             catch (Exception ex)
@@ -144,7 +139,6 @@ namespace TaskSurvey.Components.Pages.IndexSurvey
         {
             var query = surveys.AsEnumerable();
 
-            // Apply search filter
             if (!string.IsNullOrWhiteSpace(searchQuery))
             {
                 var q = searchQuery.Trim().ToLower();
@@ -155,34 +149,24 @@ namespace TaskSurvey.Components.Pages.IndexSurvey
 
             var filteredList = query.OrderByDescending(s => s.CreatedAt).ToList();
 
-            // Categorize surveys based on status
             if (canApprove)
             {
-                // For supervisors/overseers
                 if (isOverseer)
                 {
-                    // Overseer can see:
-                    // 1. Their own drafts
-                    // 2. Subordinates' surveys pending approval
-                    // 3. All confirmed/rejected surveys (both own and subordinates)
                     
                     var currentUserId = AuthState.CurrentUser?.Id;
                     
-                    // Own drafts
                     draftSurveys = filteredList.Where(s => 
                         s.Status == "Draft" && 
                         s.RequesterId == currentUserId).ToList();
                     
-                    // Subordinates' pending approvals (exclude own surveys)
                     requestedSurveys = filteredList.Where(s => 
                         s.Status == "ConfirmToApprove" && 
                         s.RequesterId != currentUserId).ToList();
                     
-                    // All confirmed and rejected (own + subordinates)
                     confirmedSurveys = filteredList.Where(s => s.Status == "Confirmed").ToList();
                     rejectedSurveys = filteredList.Where(s => s.Status == "Rejected").ToList();
                     
-                    // Processed: own requests + confirmed/rejected from all
                     processedSurveys = filteredList.Where(s => 
                         (s.Status == "ConfirmToApprove" && s.RequesterId == currentUserId) ||
                         s.Status == "Confirmed" || 
@@ -190,17 +174,15 @@ namespace TaskSurvey.Components.Pages.IndexSurvey
                 }
                 else
                 {
-                    // For pure supervisors (no own surveys)
                     requestedSurveys = filteredList.Where(s => s.Status == "ConfirmToApprove").ToList();
                     confirmedSurveys = filteredList.Where(s => s.Status == "Confirmed").ToList();
                     rejectedSurveys = filteredList.Where(s => s.Status == "Rejected").ToList();
                     processedSurveys = filteredList.Where(s => s.Status == "Confirmed" || s.Status == "Rejected").ToList();
-                    draftSurveys = new(); // No drafts for pure supervisors
+                    draftSurveys = new();
                 }
             }
             else
             {
-                // For regular users
                 draftSurveys = filteredList.Where(s => s.Status == "Draft").ToList();
                 confirmedSurveys = filteredList.Where(s => s.Status == "Confirmed").ToList();
                 rejectedSurveys = filteredList.Where(s => s.Status == "Rejected").ToList();
@@ -208,7 +190,7 @@ namespace TaskSurvey.Components.Pages.IndexSurvey
                     s.Status == "ConfirmToApprove" || 
                     s.Status == "Confirmed" || 
                     s.Status == "Rejected").ToList();
-                requestedSurveys = new(); // No requested surveys shown for regular users
+                requestedSurveys = new();
             }
         }
 
