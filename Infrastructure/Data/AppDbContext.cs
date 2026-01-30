@@ -158,8 +158,8 @@ namespace TaskSurvey.Infrastructure.Data
                     Id = "10000001",
                     Username = "Wahyu Johan",
                     PasswordHash = password,
-                    PositionId = 3,
-                    PositionName = "Departement Leader",
+                    PositionId = 1,
+                    PositionName = "Officer Leader",
                     RoleId = 1,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
@@ -203,9 +203,9 @@ namespace TaskSurvey.Infrastructure.Data
                 new TemplateHeader
                 {
                     Id = "TEMPLATE/2601/001",
-                    TemplateName = "Survey Kepuasan Kerja",
-                    PositionId = 3,
-                    Theme = "Blue Corporate",
+                    TemplateName = "Template Survey 1",
+                    PositionId = 1,
+                    Theme = "Survey Kepuasan Kerja",
                     CreatedAt = DateTime.Now,
                     UpdatedAt = templateTime
                 }

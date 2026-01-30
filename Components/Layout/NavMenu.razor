@@ -167,7 +167,7 @@
     <!-- Logout Button -->
     <div class="p-3 border-top border-custom mt-auto">
         <button class="btn btn-outline-danger-custom w-100 d-flex align-items-center justify-content-center gap-2 rounded-3 py-3 fw-semibold" 
-                @onclick="HandleLogout">
+                @onclick="ShowLogoutConfirmation">
             <i class="bi bi-box-arrow-right fs-5"></i>
             <span>Sign Out</span>
         </button>
@@ -417,6 +417,33 @@
             await JS.InvokeVoidAsync("sessionStorage.removeItem", "UserSession");
             AuthState.Logout();
             NavigationManager.NavigateTo("/login");
+        }
+    }
+
+    private async Task ShowLogoutConfirmation()
+    {
+        try
+        {
+            var result = await JS.InvokeAsync<JsonElement>("Swal.fire", new
+            {
+                title = "Logout?",
+                text = "Are you sure you want to logout?",
+                icon = "question",
+                showCancelButton = true,
+                confirmButtonColor = "#4F46E5",
+                cancelButtonColor = "#6b7280",
+                confirmButtonText = "Yes",
+                cancelButtonText = "No"
+            });
+
+            if (result.TryGetProperty("isConfirmed", out var isConfirmed) && isConfirmed.GetBoolean())
+            {
+                await HandleLogout();
+            }
+        }
+        catch (Exception)
+        {
+            return;
         }
     }
 }

@@ -58,7 +58,7 @@
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <button class="dropdown-item" @onclick="HandleLogout" style="color: var(--accent-danger);">
+                                <button class="dropdown-item" @onclick="ShowLogoutConfirmation" style="color: var(--accent-danger);">
                                     <i class="bi bi-box-arrow-right me-2"></i>Logout
                                 </button>
                             </li>
@@ -175,6 +175,33 @@
         AuthState.Logout();
         await JS.InvokeVoidAsync("sessionStorage.removeItem", "UserSession");
         NavigationManager.NavigateTo("/login", true);
+    }
+
+    private async Task ShowLogoutConfirmation()
+    {
+        try
+        {
+            var result = await JS.InvokeAsync<JsonElement>("Swal.fire", new
+            {
+                title = "Logout?",
+                text = "Are you sure you want to logout?",
+                icon = "question",
+                showCancelButton = true,
+                confirmButtonColor = "#4F46E5",
+                cancelButtonColor = "#6b7280",
+                confirmButtonText = "Yes",
+                cancelButtonText = "No"
+            });
+
+            if (result.TryGetProperty("isConfirmed", out var isConfirmed) && isConfirmed.GetBoolean())
+            {
+                await HandleLogout();
+            }
+        }
+        catch (Exception)
+        {
+            return;
+        }
     }
 
     public void Dispose()
