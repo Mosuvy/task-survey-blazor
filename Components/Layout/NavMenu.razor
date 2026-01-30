@@ -410,14 +410,9 @@
 
     private async Task HandleLogout()
     {
-        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to sign out?");
-        
-        if (confirmed)
-        {
-            await JS.InvokeVoidAsync("sessionStorage.removeItem", "UserSession");
-            AuthState.Logout();
-            NavigationManager.NavigateTo("/login");
-        }
+        await JS.InvokeVoidAsync("sessionStorage.removeItem", "UserSession");
+        AuthState.Logout();
+        NavigationManager.NavigateTo("/login");
     }
 
     private async Task ShowLogoutConfirmation()
