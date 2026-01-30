@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using TaskSurvey.Components;
 using TaskSurvey.Infrastructure.Data;
@@ -26,6 +27,10 @@ builder.Services.AddScoped(sp => new HttpClient {
 
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo("/app/keys"))
+    .SetApplicationName("blazor_tasksurvey");
 
 builder.Services.AddControllers();
 

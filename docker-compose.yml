@@ -21,8 +21,11 @@ services:
     environment:
       ConnectionStrings__DefaultConnection: "Server=db;Database=tasksurvey_db;User Id=sa;Password=Password123!;TrustServerCertificate=True;"
       TZ: "Asia/Jakarta"
+    volumes:
+      - dataprotection_keys:/app/keys
     depends_on:
       - db
 
 volumes:
   sql_data:
+  dataprotection_keys:
