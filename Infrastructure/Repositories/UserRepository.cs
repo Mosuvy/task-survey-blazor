@@ -80,17 +80,31 @@ namespace TaskSurvey.Infrastructure.Repositories
                 await context.Users.AddAsync(user);
                 await context.SaveChangesAsync();
 
-                var supervisor = await context.Users.AnyAsync(s => s.Id == supervisorId);
-                if (supervisor)
+                if (!string.IsNullOrWhiteSpace(supervisorId))
                 {
-                    var relation = new UserRelation
+                    var supervisor = await context.Users.AnyAsync(s => s.Id == supervisorId);
+                    if (supervisor)
                     {
-                        UserId = user.Id,
-                        SupervisorId = supervisorId,
-                        CreatedAt = DateTime.Now
-                    };
-                    await context.UserRelations.AddAsync(relation);
-                    await context.SaveChangesAsync();
+                        var wouldCreateCircular = await SupervisorValidationUtil.WouldCreateCircularReference(
+                            context, user.Id, supervisorId);
+                        
+                        if (wouldCreateCircular)
+                        {
+                            throw new InvalidOperationException(
+                                "Cannot set this supervisor: it would create a circular reference in the hierarchy.");
+                        }
+
+                        var relation = new UserRelation
+                        {
+                            UserId = user.Id,
+                            SupervisorId = supervisorId,
+                            CreatedAt = DateTime.Now
+                        };
+                        await context.UserRelations.AddAsync(relation);
+                        await context.SaveChangesAsync();
+
+                        await UpdateSupervisorRoleIfNeeded(context, supervisorId);
+                    }
                 }
 
                 await transaction.CommitAsync();
@@ -104,6 +118,27 @@ namespace TaskSurvey.Infrastructure.Repositories
             }
         }
 
+        /// <summary>
+        /// Update user role to Overseer if they have subordinates and are currently a User
+        /// </summary>
+        private async Task UpdateSupervisorRoleIfNeeded(AppDbContext context, string userId)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) return;
+
+            if (user.RoleId == 2)
+            {
+                var hasSubordinates = await context.UserRelations.AnyAsync(ur => ur.SupervisorId == userId);
+                
+                if (hasSubordinates)
+                {
+                    user.RoleId = 3;
+                    user.UpdatedAt = DateTime.Now;
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
+
         public async Task<User?> UpdateUserAsync(string id, User user, string? supervisorId)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
@@ -114,18 +149,32 @@ namespace TaskSurvey.Infrastructure.Repositories
                 var existingUser = await context.Users.FirstOrDefaultAsync(u => u.Id == id);
                 if (existingUser == null) return null;
 
+                var oldSupervisorId = await context.UserRelations
+                    .Where(ur => ur.UserId == id)
+                    .Select(ur => ur.SupervisorId)
+                    .FirstOrDefaultAsync();
+
                 existingUser.Username = user.Username;
                 if (!string.IsNullOrEmpty(user.PasswordHash)) 
                     existingUser.PasswordHash = PasswordUtil.HashPassword(user.PasswordHash);
                 
                 existingUser.PositionId = user.PositionId;
                 existingUser.PositionName = user.PositionName;
-                existingUser.RoleId = user.RoleId;
                 existingUser.UpdatedAt = DateTime.Now;
 
-                if (!string.IsNullOrEmpty(supervisorId))
+                var existingRelation = await context.UserRelations.FirstOrDefaultAsync(u => u.UserId == id);
+
+                if (!string.IsNullOrWhiteSpace(supervisorId))
                 {
-                    var existingRelation = await context.UserRelations.FirstOrDefaultAsync(u => u.UserId == id);
+                    var wouldCreateCircular = await SupervisorValidationUtil.WouldCreateCircularReference(
+                        context, id, supervisorId);
+                    
+                    if (wouldCreateCircular)
+                    {
+                        throw new InvalidOperationException(
+                            "Cannot set this supervisor: it would create a circular reference in the hierarchy.");
+                    }
+
                     if (existingRelation != null)
                     {
                         existingRelation.SupervisorId = supervisorId;
@@ -138,9 +187,39 @@ namespace TaskSurvey.Infrastructure.Repositories
                             CreatedAt = DateTime.Now 
                         });
                     }
+
+                    var hasSubordinates = await context.UserRelations.AnyAsync(ur => ur.SupervisorId == id);
+                    if (hasSubordinates)
+                    {
+                        existingUser.RoleId = 3; // Overseer
+                    }
+                    else
+                    {
+                        existingUser.RoleId = 2; // User
+                    }
+                }
+                else
+                {
+                    // Supervisor
+                    if (existingRelation != null)
+                    {
+                        context.UserRelations.Remove(existingRelation);
+                    }
+                    existingUser.RoleId = 1;
                 }
 
                 await context.SaveChangesAsync();
+
+                if (!string.IsNullOrWhiteSpace(supervisorId))
+                {
+                    await UpdateUserRoleBasedOnSubordinates(context, supervisorId);
+                }
+
+                if (!string.IsNullOrWhiteSpace(oldSupervisorId) && oldSupervisorId != supervisorId)
+                {
+                    await UpdateUserRoleBasedOnSubordinates(context, oldSupervisorId);
+                }
+
                 await transaction.CommitAsync();
                 return await GetUserByIdAsync(existingUser.Id);
             }
@@ -148,6 +227,45 @@ namespace TaskSurvey.Infrastructure.Repositories
             {
                 await transaction.RollbackAsync();
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Update user role based on their current subordinates and supervisor status
+        /// </summary>
+        private async Task UpdateUserRoleBasedOnSubordinates(AppDbContext context, string userId)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) return;
+
+            var hasSupervisor = await context.UserRelations.AnyAsync(ur => ur.UserId == userId);
+            
+            var hasSubordinates = await context.UserRelations.AnyAsync(ur => ur.SupervisorId == userId);
+
+            int newRoleId;
+            
+            if (!hasSupervisor && hasSubordinates)
+            {
+                newRoleId = 1; // Supervisor
+            }
+            else if (hasSupervisor && hasSubordinates)
+            {
+                newRoleId = 3; // Overseer
+            }
+            else if (hasSupervisor && !hasSubordinates)
+            {
+                newRoleId = 2; // User
+            }
+            else
+            {
+                newRoleId = 1; // Supervisor
+            }
+
+            if (user.RoleId != newRoleId)
+            {
+                user.RoleId = newRoleId;
+                user.UpdatedAt = DateTime.Now;
+                await context.SaveChangesAsync();
             }
         }
 
@@ -165,6 +283,12 @@ namespace TaskSurvey.Infrastructure.Repositories
 
                 if (user == null) return false;
 
+                string? supervisorId = user.SupervisorRelations?.FirstOrDefault()?.SupervisorId;
+                
+                List<string> subordinateIds = user.SubordinateRelations?
+                    .Select(sr => sr.UserId)
+                    .ToList() ?? new List<string>();
+
                 if (user.SupervisorRelations != null && user.SupervisorRelations.Any())
                 {
                     context.UserRelations.RemoveRange(user.SupervisorRelations);
@@ -176,10 +300,21 @@ namespace TaskSurvey.Infrastructure.Repositories
                 }
 
                 context.Users.Remove(user);
-                var result = await context.SaveChangesAsync() > 0;
+                
+                await context.SaveChangesAsync();
+
+                if (!string.IsNullOrWhiteSpace(supervisorId))
+                {
+                    await UpdateUserRoleBasedOnSubordinates(context, supervisorId);
+                }
+
+                foreach (var subordinateId in subordinateIds)
+                {
+                    await UpdateUserRoleBasedOnSubordinates(context, subordinateId);
+                }
                 
                 await transaction.CommitAsync();
-                return result;
+                return true;
             }
             catch (Exception)
             {

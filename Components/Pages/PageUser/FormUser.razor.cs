@@ -25,6 +25,8 @@ public partial class FormUser : ComponentBase
     private UserRequestDTO reqDto = new();
     private List<PositionResponseDTO> positions = new();
     private List<UserResponseDTO> allUsersList = new();
+    private List<UserResponseDTO> modalUserList = new();
+    private List<UserResponseDTO> availableSupervisors = new();
     
     private string displayId = "";
     private string? currentUserId;
@@ -38,6 +40,7 @@ public partial class FormUser : ComponentBase
     private string selectedSupName = "";
     private string selectedSupPos = "";
     private bool isUser = false;
+    private bool currentUserHasSubordinates = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -84,6 +87,7 @@ public partial class FormUser : ComponentBase
     {
         positions = await PositionService.GetPositions();
         allUsersList = await UserService.GetUsers();
+        modalUserList = allUsersList.Where(x => x.Id != AuthState.CurrentUser?.Id).ToList();
 
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
         if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("userId", out var id))
@@ -93,6 +97,7 @@ public partial class FormUser : ComponentBase
         else
         {
             await GenerateNextId();
+            await UpdateAvailableSupervisors();
         }
     }
 
@@ -105,14 +110,33 @@ public partial class FormUser : ComponentBase
         displayId = await IdGeneratorUtil.GetNextFormattedUserId(context, false);
     }
 
+    private async Task UpdateAvailableSupervisors()
+    {
+        using var context = await DbContextFactory.CreateDbContextAsync();
+        
+        if (isEditMode && !string.IsNullOrEmpty(currentUserId))
+        {
+            var allSubordinates = await SupervisorValidationUtil.GetAllSubordinateIds(context, currentUserId);
+            
+            availableSupervisors = allUsersList
+                .Where(u => u.Id != currentUserId && !allSubordinates.Contains(u.Id))
+                .ToList();
+        }
+        else
+        {
+            availableSupervisors = allUsersList.Where(u => u.Id != AuthState.CurrentUser?.Id).ToList();
+        }
+    }
+
     private void OpenUserLookupModal()
     {
         showUserLookup = true;
         searchQuery = "";
     }
 
-    private void OpenSupervisorLookupModal()
+    private async Task OpenSupervisorLookupModal()
     {
+        await UpdateAvailableSupervisors();
         showSupLookup = true;
         searchQuery = "";
     }
@@ -134,7 +158,59 @@ public partial class FormUser : ComponentBase
             selectedSupName = user.Supervisor?.Username ?? "";
             selectedSupPos = user.Supervisor?.PositionName ?? "";
         }
+        
+        using var context = await DbContextFactory.CreateDbContextAsync();
+        currentUserHasSubordinates = await context.UserRelations
+            .AnyAsync(ur => ur.SupervisorId == id);
+        
+        await UpdateAvailableSupervisors();
         StateHasChanged();
+    }
+
+    private string GetPredictedRole()
+    {
+        if (isEditMode)
+        {
+            if (string.IsNullOrWhiteSpace(reqDto.SupervisorId))
+            {
+                return "Will be updated to: Supervisor";
+            }
+            else if (currentUserHasSubordinates)
+            {
+                return "Will remain as: Overseer";
+            }
+            else
+            {
+                return "Will remain as: User";
+            }
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(reqDto.SupervisorId))
+            {
+                return "Will be created as: Supervisor";
+            }
+            else
+            {
+                return "Will be created as: User";
+            }
+        }
+    }
+
+    private string GetPredictedRoleColor()
+    {
+        if (string.IsNullOrWhiteSpace(reqDto.SupervisorId))
+        {
+            return "text-primary"; // Supervisor
+        }
+        else if (isEditMode && currentUserHasSubordinates)
+        {
+            return "text-warning"; // Overseer
+        }
+        else
+        {
+            return "text-success"; // User
+        }
     }
 
     private void SelectSup(UserResponseDTO s)
@@ -143,6 +219,13 @@ public partial class FormUser : ComponentBase
         selectedSupName = s.Username;
         selectedSupPos = s.PositionName;
         CloseModals();
+    }
+
+    private void ClearSupervisor()
+    {
+        reqDto.SupervisorId = null;
+        selectedSupName = "";
+        selectedSupPos = "";
     }
 
     private void CloseModals() 
@@ -159,8 +242,7 @@ public partial class FormUser : ComponentBase
 
         if (string.IsNullOrWhiteSpace(reqDto.Username) || 
             reqDto.PositionId == 0 || 
-            string.IsNullOrWhiteSpace(reqDto.PositionName) || 
-            string.IsNullOrWhiteSpace(reqDto.SupervisorId))
+            string.IsNullOrWhiteSpace(reqDto.PositionName))
         {
             await JS.InvokeVoidAsync("Swal.fire", new
             {
@@ -170,6 +252,33 @@ public partial class FormUser : ComponentBase
                 confirmButtonColor = "#4F46E5"
             });
             return;
+        }
+
+        var supervisorText = string.IsNullOrWhiteSpace(reqDto.SupervisorId) 
+            ? "<strong>No Supervisor</strong>" 
+            : $"<strong>Supervisor:</strong> {selectedSupName}";
+
+        string roleText;
+        if (isEditMode)
+        {
+            if (string.IsNullOrWhiteSpace(reqDto.SupervisorId))
+            {
+                roleText = "<p style='margin: 5px 0; font-size: 0.9rem; color: #4F46E5;'><strong>Role:</strong> Supervisor</p>";
+            }
+            else if (currentUserHasSubordinates)
+            {
+                roleText = "<p style='margin: 5px 0; font-size: 0.9rem; color: #f59e0b;'><strong>Role:</strong> Overseer</p>";
+            }
+            else
+            {
+                roleText = "<p style='margin: 5px 0; font-size: 0.9rem; color: #22c55e;'><strong>Role:</strong> User</p>";
+            }
+        }
+        else
+        {
+            roleText = string.IsNullOrWhiteSpace(reqDto.SupervisorId)
+                ? "<p style='margin: 5px 0; font-size: 0.9rem; color: #4F46E5;'><strong>Role:</strong> Supervisor</p>"
+                : "<p style='margin: 5px 0; font-size: 0.9rem; color: #22c55e;'><strong>Role:</strong> User</p>";
         }
 
         try
@@ -184,7 +293,8 @@ public partial class FormUser : ComponentBase
                             <p style='margin: 5px 0; font-size: 0.9rem;'><strong>ID:</strong> {displayId}</p>
                             <p style='margin: 5px 0; font-size: 0.9rem;'><strong>Username:</strong> {reqDto.Username}</p>
                             <p style='margin: 5px 0; font-size: 0.9rem;'><strong>Position:</strong> {reqDto.PositionName}</p>
-                            <p style='margin: 5px 0; font-size: 0.9rem;'><strong>Supervisor:</strong> {selectedSupName}</p>
+                            <p style='margin: 5px 0; font-size: 0.9rem;'>{supervisorText}</p>
+                            {roleText}
                         </div>
                     </div>
                 ",
@@ -214,26 +324,39 @@ public partial class FormUser : ComponentBase
 
         try 
         {
-            var selectedSupervisor = allUsersList.FirstOrDefault(u => u.Id == reqDto.SupervisorId);
-
-            if (selectedSupervisor != null)
+            if (isEditMode)
             {
-                if (selectedSupervisor.Role?.Id == 1)
+                using var context = await DbContextFactory.CreateDbContextAsync();
+                
+                var hasSubordinates = await context.UserRelations
+                    .AnyAsync(ur => ur.SupervisorId == currentUserId);
+
+                if (string.IsNullOrWhiteSpace(reqDto.SupervisorId))
                 {
+                    // Supervisor
+                    reqDto.RoleId = 1;
+                }
+                else if (hasSubordinates)
+                {
+                    // Overseer
                     reqDto.RoleId = 3;
                 }
-                else if (selectedSupervisor.Role?.Id == 3)
+                else
                 {
+                    // User
                     reqDto.RoleId = 2;
-                }
-                else 
-                {
-                    reqDto.RoleId = 2; 
                 }
             }
             else
             {
-                reqDto.RoleId = 2; 
+                if (string.IsNullOrWhiteSpace(reqDto.SupervisorId))
+                {
+                    reqDto.RoleId = 1; // Supervisor
+                }
+                else
+                {
+                    reqDto.RoleId = 2; // User
+                }
             }
 
             reqDto.PasswordHash = ""; 
@@ -255,7 +378,7 @@ public partial class FormUser : ComponentBase
                 await JS.InvokeVoidAsync("Swal.fire", new
                 {
                     title = "Created!",
-                    text = "User created successfully!",
+                    text = $"User created successfully as {(reqDto.RoleId == 1 ? "Supervisor" : "User")}!",
                     icon = "success",
                     confirmButtonColor = "#4F46E5"
                 });
@@ -265,11 +388,19 @@ public partial class FormUser : ComponentBase
             NavigationManager.NavigateTo("/users");
         }
         catch (Exception ex) 
-        { 
+        {
+            string errorMessage = ex.Message;
+            
+            if (ex.Message.Contains("circular reference"))
+            {
+                errorMessage = "Cannot set this supervisor: It would create a circular hierarchy. " +
+                              "A user cannot be supervised by their own subordinate.";
+            }
+            
             await JS.InvokeVoidAsync("Swal.fire", new
             {
                 title = "Error!",
-                text = ex.Message,
+                text = errorMessage,
                 icon = "error",
                 confirmButtonColor = "#4F46E5"
             });
@@ -283,10 +414,12 @@ public partial class FormUser : ComponentBase
         alertMessage = null;
         successMessage = null;
         currentUserId = null;
+        currentUserHasSubordinates = false;
         reqDto = new UserRequestDTO();
         selectedSupName = "";
         selectedSupPos = "";
         await GenerateNextId();
+        await UpdateAvailableSupervisors();
         NavigationManager.NavigateTo("/users/form", true);
     }
 

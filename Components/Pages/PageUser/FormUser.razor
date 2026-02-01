@@ -41,7 +41,7 @@
                 </div>
             }
 
-            <!-- Main Form Card -->
+            <!-- Form Card -->
             <div class="card border-custom shadow-sm rounded-3 mb-3 bg-card">
                 <div class="card-header bg-primary text-white py-3 px-4 border-0">
                     <h6 class="mb-0 fw-semibold">
@@ -135,7 +135,7 @@
                         <h6 class="mb-0 fw-semibold">
                             <i class="bi bi-person-lines-fill me-2"></i>Supervisor Details
                         </h6>
-                        <span class="badge bg-light text-dark">Required for Officer positions</span>
+                        <span class="badge bg-light text-dark">Optional - Leave empty for top-level</span>
                     </div>
                 </div>
                 
@@ -144,34 +144,42 @@
                         <!-- Supervisor Id -->
                         <div class="col-md-4">
                             <label class="form-label fw-semibold text-title mb-2">
-                                Supervisor ID <span class="text-danger">*</span>
+                                Supervisor ID
                             </label>
                             <div class="input-group">
-                                <input type="text" class="form-control bg-main border-custom @(hasAttemptedSubmit && string.IsNullOrWhiteSpace(reqDto.SupervisorId) ? "is-invalid" : "")" 
-                                       @bind="reqDto.SupervisorId" readonly />
+                                <input type="text" class="form-control bg-main border-custom" 
+                                       @bind="reqDto.SupervisorId" readonly 
+                                       placeholder="No supervisor" />
                                 <button class="btn bg-secondary text-white px-4" type="button" 
                                         @onclick="OpenSupervisorLookupModal">
                                     <i class="bi bi-search me-1"></i>Select
                                 </button>
+                                @if (!string.IsNullOrWhiteSpace(reqDto.SupervisorId))
+                                {
+                                    <button class="btn btn-outline-danger px-3" type="button" 
+                                            @onclick="ClearSupervisor"
+                                            title="Clear supervisor">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                }
                             </div>
-                            @if (hasAttemptedSubmit && string.IsNullOrWhiteSpace(reqDto.SupervisorId))
-                            {
-                                <div class="invalid-feedback d-block">
-                                    <i class="bi bi-exclamation-circle me-1"></i>Supervisor is required
-                                </div>
-                            }
+                            <small class="@GetPredictedRole() fw-semibold d-block mt-2">
+                                <i class="bi bi-arrow-right-circle-fill me-1"></i>@GetPredictedRole()
+                            </small>
                         </div>
                         <!-- Supervisor Name -->
                         <div class="col-md-4">
                             <label class="form-label fw-semibold text-title mb-2">Name</label>
                             <input type="text" class="form-control bg-main border-custom text-body" 
-                                   @bind="selectedSupName" readonly />
+                                   @bind="selectedSupName" readonly 
+                                   placeholder="@(string.IsNullOrWhiteSpace(reqDto.SupervisorId) ? "-" : "")" />
                         </div>
                         <!-- Supervisor Position -->
                         <div class="col-md-4">
                             <label class="form-label fw-semibold text-title mb-2">Position</label>
                             <input type="text" class="form-control bg-main border-custom text-body" 
-                                   @bind="selectedSupPos" readonly />
+                                   @bind="selectedSupPos" readonly 
+                                   placeholder="@(string.IsNullOrWhiteSpace(reqDto.SupervisorId) ? "-" : "")" />
                         </div>
                     </div>
                 </div>
@@ -279,11 +287,18 @@
         <div class="modal-content border-0 shadow-lg bg-card">
             <div class="modal-header bg-secondary text-white border-0">
                 <h5 class="modal-title fw-semibold">
-                    <i class="bi bi-search me-2"></i>Select Supervisor (Officer)
+                    <i class="bi bi-search me-2"></i>Select Supervisor
                 </h5>
                 <button type="button" class="btn-close btn-close-white" @onclick="CloseModals"></button>
             </div>
             <div class="modal-body p-4">
+                @if (isEditMode)
+                {
+                    <div class="alert alert-info border-0 mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <small>Users in your subordinate chain cannot be selected to prevent circular hierarchy.</small>
+                    </div>
+                }
                 <div class="input-group mb-3">
                     <span class="input-group-text bg-main border-custom">
                         <i class="bi bi-funnel text-primary"></i>
@@ -304,7 +319,7 @@
                         </thead>
                         <tbody>
                             @{
-                                var filteredSup = allUsersList.Where(x => 
+                                var filteredSup = availableSupervisors.Where(x => 
                                     x.Username.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) || 
                                     x.Id.Contains(searchQuery));
                             }
@@ -313,7 +328,7 @@
                                 <tr>
                                     <td colspan="4" class="text-center py-5 text-muted">
                                         <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                        <p class="mb-0">No supervisors found</p>
+                                        <p class="mb-0">@(isEditMode ? "No valid supervisors available" : "No supervisors found")</p>
                                     </td>
                                 </tr>
                             }
