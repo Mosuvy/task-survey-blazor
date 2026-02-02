@@ -9,13 +9,6 @@ namespace TaskSurvey.Infrastructure.Utils
 {
     public class SupervisorValidationUtil
     {
-        /// <summary>
-        /// Check if setting a supervisor would create a circular reference in the hierarchy
-        /// </summary>
-        /// <param name="context">Database context</param>
-        /// <param name="userId">The user who will get a new supervisor</param>
-        /// <param name="proposedSupervisorId">The proposed supervisor ID</param>
-        /// <returns>True if circular reference would be created, False otherwise</returns>
         public static async Task<bool> WouldCreateCircularReference(
             AppDbContext context, 
             string userId, 
@@ -29,9 +22,6 @@ namespace TaskSurvey.Infrastructure.Utils
             return await IsSubordinateOf(context, proposedSupervisorId, userId);
         }
 
-        /// <summary>
-        /// Check if targetUserId is a subordinate of supervisorId (directly or indirectly)
-        /// </summary>
         private static async Task<bool> IsSubordinateOf(
             AppDbContext context, 
             string targetUserId, 
@@ -68,9 +58,6 @@ namespace TaskSurvey.Infrastructure.Utils
             return false;
         }
 
-        /// <summary>
-        /// Get the full supervisor chain for a user (from bottom to top)
-        /// </summary>
         public static async Task<List<string>> GetSupervisorChain(
             AppDbContext context, 
             string userId)
@@ -104,9 +91,6 @@ namespace TaskSurvey.Infrastructure.Utils
             return chain;
         }
 
-        /// <summary>
-        /// Get all subordinates (directly and indirectly) for a supervisor
-        /// </summary>
         public static async Task<List<string>> GetAllSubordinateIds(
             AppDbContext context, 
             string supervisorId)

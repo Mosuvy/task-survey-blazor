@@ -118,9 +118,6 @@ namespace TaskSurvey.Infrastructure.Repositories
             }
         }
 
-        /// <summary>
-        /// Update user role to Overseer if they have subordinates and are currently a User
-        /// </summary>
         private async Task UpdateSupervisorRoleIfNeeded(AppDbContext context, string userId)
         {
             var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
@@ -230,9 +227,6 @@ namespace TaskSurvey.Infrastructure.Repositories
             }
         }
 
-        /// <summary>
-        /// Update user role based on their current subordinates and supervisor status
-        /// </summary>
         private async Task UpdateUserRoleBasedOnSubordinates(AppDbContext context, string userId)
         {
             var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
